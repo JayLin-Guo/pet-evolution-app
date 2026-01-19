@@ -1,23 +1,38 @@
-# 鸿蒙项目忽略文件
+# Dependencies
 node_modules/
-.idea/
-.hvigor/
+packages/*/node_modules/
+
+# Build outputs
+dist/
 build/
-oh_modules/
-local.properties
-*.hap
-*.app
+packages/*/dist/
+packages/*/build/
 
-# 日志文件
-*.log
+# Expo
+.expo/
+.expo-shared/
 
-# 临时文件
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
 Thumbs.db
 
-# 配置文件（包含密钥）
-**/AIConfig.ets
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# DevEco Studio
-.cxx/
-.externalNativeBuild/
+# TypeScript
+*.tsbuildinfo

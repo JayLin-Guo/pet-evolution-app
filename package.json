@@ -1,34 +1,22 @@
 {
-  "name": "pet-app",
+  "name": "pet-evolution-monorepo",
   "version": "1.0.0",
-  "main": "node_modules/expo/AppEntry.js",
+  "private": true,
   "scripts": {
-    "start": "expo start --port 8085",
-    "android": "expo start --android --port 8085",
-    "ios": "expo start --ios --port 8085",
-    "web": "expo start --web --port 8085"
-  },
-  "dependencies": {
-    "@esotericsoftware/spine-webgl": "^4.2.98",
-    "@expo/metro-runtime": "~3.2.0",
-    "@react-native-async-storage/async-storage": "^2.2.0",
-    "expo": "~51.0.0",
-    "expo-asset": "^12.0.12",
-    "expo-blur": "~13.0.3",
-    "expo-linear-gradient": "~13.0.2",
-    "expo-status-bar": "~1.12.1",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-native": "0.74.5",
-    "react-native-paper": "^5.14.5",
-    "react-native-safe-area-context": "^5.6.2",
-    "react-native-web": "~0.19.10",
-    "react-native-webview": "^13.16.0"
+    "mobile": "pnpm --filter @pet-evolution/mobile start",
+    "mobile:android": "pnpm --filter @pet-evolution/mobile android",
+    "mobile:ios": "pnpm --filter @pet-evolution/mobile ios",
+    "mobile:web": "pnpm --filter @pet-evolution/mobile web",
+    "mobile:clean": "rm -rf .expo packages/mobile/.expo packages/mobile/node_modules/.cache",
+    "web-pet": "pnpm --filter @pet-evolution/web-pet dev",
+    "web-pet:build": "pnpm --filter @pet-evolution/web-pet build",
+    "web-pet:preview": "pnpm --filter @pet-evolution/web-pet preview",
+    "dev": "pnpm web-pet",
+    "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist .expo packages/mobile/.expo",
+    "clean:mobile": "rm -rf packages/mobile/node_modules .expo packages/mobile/.expo",
+    "clean:web-pet": "rm -rf packages/web-pet/node_modules packages/web-pet/dist"
   },
   "devDependencies": {
-    "@babel/core": "^7.24.0",
-    "@types/react": "~18.2.79",
     "typescript": "~5.3.3"
-  },
-  "private": true
+  }
 }

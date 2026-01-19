@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "pet-app",
+    "slug": "pet-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "assets/mon_earth_dragon_*/**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.petevolution.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
