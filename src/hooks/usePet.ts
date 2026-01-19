@@ -1,99 +1,203 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Pet, GrowthStage, UltimateForm, createNewPet } from '../models/PetModel';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useEffect, useCallback } from "react";
+import {
+  Pet,
+  GrowthStage,
+  UltimateForm,
+  createNewPet,
+} from "../models/PetModel";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { petApi } from "../api/pet";
+import { authApi } from "../api/auth";
 
-const STORAGE_KEY = '@pet_data';
+const STORAGE_KEY = "@pet_data";
+const USE_MOCK = true;
 
 export const usePet = () => {
-  const [pet, setPet] = useState<Pet>(createNewPet());
+  const [pet, setPet] = useState<Pet | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    userId: string;
+    phoneNumber: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 加载宠物数据
+  // 初始化：检查登录态并同步数据
   useEffect(() => {
-    loadPet();
+    const init = async () => {
+      setLoading(true);
+      const user = await authApi.getCurrentUser();
+      if (user) {
+        setCurrentUser(user);
+        await loadPet(user.userId);
+      }
+      setLoading(false);
+    };
+    init();
   }, []);
 
-  // 定时更新宠物状态
+  // 定时同步宠物状态
   useEffect(() => {
+    if (!pet || !currentUser) return;
     const interval = setInterval(() => {
-      updatePetStatus();
-    }, 60000); // 每分钟更新一次
+      syncPetWithServer();
+    }, 60000);
 
     return () => clearInterval(interval);
-  }, [pet]);
+  }, [pet, currentUser]);
 
-  const loadPet = async () => {
+  const loadPet = async (userId: string) => {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEY);
-      if (data) {
-        setPet(JSON.parse(data));
+      if (USE_MOCK) {
+        // 使用用户ID作为存储键的一部分，实现多账号隔离
+        const data = await AsyncStorage.getItem(`${STORAGE_KEY}_${userId}`);
+        setPet(data ? JSON.parse(data) : null);
+      } else {
+        const remotePet = await petApi.getPet();
+        setPet(remotePet);
       }
     } catch (error) {
-      console.error('加载宠物数据失败:', error);
-    } finally {
-      setLoading(false);
+      console.error("加载宠物数据失败:", error);
     }
   };
 
-  const savePet = async (newPet: Pet) => {
+  /**
+   * 登录 / 注册
+   */
+  const login = async (phone: string) => {
+    const user = await authApi.login(phone);
+    const userData = { userId: user.userId, phoneNumber: phone };
+    setCurrentUser(userData);
+    await loadPet(user.userId);
+  };
+
+  /**
+   * 退出登录
+   */
+  const logout = async () => {
+    await authApi.logout();
+    setCurrentUser(null);
+    setPet(null);
+  };
+
+  /**
+   * 同步数据到服务器/本地存储
+   */
+  const syncPetWithServer = async (targetPet?: Pet) => {
+    const dataToSync = targetPet || pet;
+    if (!dataToSync || !currentUser) return;
+
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newPet));
-      setPet(newPet);
+      if (USE_MOCK) {
+        await AsyncStorage.setItem(
+          `${STORAGE_KEY}_${currentUser.userId}`,
+          JSON.stringify(dataToSync),
+        );
+      } else {
+        // 增量或全量同步到服务器
+        const updated = await petApi.updateStatus(dataToSync);
+        setPet(updated);
+      }
     } catch (error) {
-      console.error('保存宠物数据失败:', error);
+      console.error("同步宠物数据失败:", error);
+    }
+  };
+
+  // 领养宠物
+  const adoptPet = useCallback(
+    async (name: string) => {
+      if (!currentUser) return;
+      try {
+        setLoading(true);
+        if (USE_MOCK) {
+          const newPet = createNewPet(currentUser.userId);
+          newPet.name = name;
+          await syncPetWithServer(newPet);
+          setPet(newPet);
+        } else {
+          const remotePet = await petApi.adoptPet(name);
+          setPet(remotePet);
+        }
+      } catch (error) {
+        console.error("领养失败:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pet, currentUser],
+  );
+
+  // 退出/注销
+  const resetPet = async () => {
+    if (currentUser) {
+      await AsyncStorage.removeItem(`${STORAGE_KEY}_${currentUser.userId}`);
+      setPet(null);
     }
   };
 
   // 喂食
-  const feed = useCallback((foodValue: number = 20) => {
-    const newPet = { ...pet };
-    newPet.hunger = Math.min(100, newPet.hunger + foodValue);
-    newPet.happiness = Math.min(100, newPet.happiness + 5);
-    newPet.intimacy = Math.min(100, newPet.intimacy + 2);
-    newPet.lastInteractTime = Date.now();
-    addExp(newPet, 10);
-    savePet(newPet);
-  }, [pet]);
+  const feed = useCallback(
+    async (foodValue: number = 20) => {
+      if (!pet) return;
+      try {
+        const updatedPet = await petApi.feedPet(foodValue);
+        setPet(updatedPet);
+        await syncPetWithServer(updatedPet);
+      } catch (e) {
+        console.error("喂食同步失败:", e);
+      }
+    },
+    [pet],
+  );
 
   // 玩耍
-  const play = useCallback(() => {
-    const newPet = { ...pet };
-    newPet.happiness = Math.min(100, newPet.happiness + 10);
-    newPet.hunger = Math.max(0, newPet.hunger - 5);
-    newPet.intimacy = Math.min(100, newPet.intimacy + 3);
-    newPet.lastInteractTime = Date.now();
-    addExp(newPet, 15);
-    savePet(newPet);
+  const play = useCallback(async () => {
+    if (!pet) return;
+    try {
+      const updatedPet = await petApi.playWithPet();
+      setPet(updatedPet);
+      await syncPetWithServer(updatedPet);
+    } catch (e) {
+      console.error("玩耍同步失败:", e);
+    }
   }, [pet]);
 
   // 聊天
-  const chat = useCallback((message: string): string => {
-    const newPet = { ...pet };
-    newPet.happiness = Math.min(100, newPet.happiness + 8);
-    newPet.intimacy = Math.min(100, newPet.intimacy + 5);
-    newPet.lastInteractTime = Date.now();
-    addExp(newPet, 8);
-    savePet(newPet);
+  const chat = useCallback(
+    async (message: string): Promise<string> => {
+      if (!pet) return "我还没出生呢...";
 
-    // 简单的回复逻辑
-    const responses = [
-      '喵~ 我很开心！',
-      '主人，我想和你玩！',
-      '我饿了，给我点吃的吧~',
-      '你是最好的主人！',
-      '今天天气真好呀！'
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
-  }, [pet]);
+      try {
+        const { reply, statusUpdate } = await petApi.chatWithPet(message);
+
+        // 以 API 返回的 statusUpdate 为主更新数据
+        if (statusUpdate) {
+          const newPet = { ...pet, ...statusUpdate };
+
+          // 如果 API 返回了经验值增加，前端可以在此处处理升级逻辑
+          if (statusUpdate.exp) {
+            addExp(newPet, 0); // 触发内部升级检查逻辑
+          }
+
+          setPet(newPet);
+          await syncPetWithServer(newPet);
+        }
+        return reply;
+      } catch (e) {
+        return "我的通讯似乎被切断了...";
+      }
+    },
+    [pet],
+  );
 
   // 抚摸
-  const pet_touch = useCallback(() => {
-    const newPet = { ...pet };
-    newPet.happiness = Math.min(100, newPet.happiness + 5);
-    newPet.intimacy = Math.min(100, newPet.intimacy + 3);
-    newPet.lastInteractTime = Date.now();
-    addExp(newPet, 5);
-    savePet(newPet);
+  const pet_touch = useCallback(async () => {
+    if (!pet) return;
+    try {
+      const updatedPet = await petApi.touchPet();
+      setPet(updatedPet);
+      await syncPetWithServer(updatedPet);
+    } catch (e) {
+      console.error("抚摸同步失败:", e);
+    }
   }, [pet]);
 
   // 增加经验值
@@ -132,19 +236,20 @@ export const usePet = () => {
       GrowthStage.TEEN,
       GrowthStage.ADULT,
       GrowthStage.PRIME,
-      GrowthStage.PEAK
+      GrowthStage.PEAK,
     ];
     const currentIndex = stages.indexOf(currentPet.stage);
     if (currentIndex < stages.length - 1) {
       currentPet.stage = stages[currentIndex + 1];
     }
-
     if (currentPet.stage === GrowthStage.PEAK && !currentPet.ultimateForm) {
       determineUltimateForm(currentPet);
     }
   };
 
-  // 根据属性确定终极形态
+  /**
+   * 确定终极形态
+   */
   const determineUltimateForm = (currentPet: Pet) => {
     const attrs = currentPet.attributes;
     const maxAttr = Math.max(
@@ -152,39 +257,41 @@ export const usePet = () => {
       attrs.intelligence,
       attrs.agility,
       attrs.spirit,
-      attrs.charm
+      attrs.charm,
     );
-
-    if (attrs.strength === maxAttr) {
+    if (attrs.strength === maxAttr)
       currentPet.ultimateForm = UltimateForm.DRAGON;
-    } else if (attrs.intelligence === maxAttr) {
+    else if (attrs.intelligence === maxAttr)
       currentPet.ultimateForm = UltimateForm.TAOTIE;
-    } else if (attrs.agility === maxAttr) {
+    else if (attrs.agility === maxAttr)
       currentPet.ultimateForm = UltimateForm.PHOENIX;
-    } else if (attrs.spirit === maxAttr) {
+    else if (attrs.spirit === maxAttr)
       currentPet.ultimateForm = UltimateForm.ANGEL;
-    } else {
-      currentPet.ultimateForm = UltimateForm.QILIN;
-    }
+    else currentPet.ultimateForm = UltimateForm.QILIN;
   };
 
-  // 更新宠物状态
-  const updatePetStatus = () => {
+  const updatePetStatus = async () => {
+    if (!pet) return;
     const now = Date.now();
     const timePassed = (now - pet.lastInteractTime) / 1000 / 60;
-
     if (timePassed >= 10) {
       const newPet = { ...pet };
       newPet.hunger = Math.max(0, newPet.hunger - 5);
       newPet.happiness = Math.max(0, newPet.happiness - 3);
       newPet.lastInteractTime = now;
-      savePet(newPet);
+      setPet(newPet);
+      await syncPetWithServer(newPet);
     }
   };
 
   return {
     pet,
+    currentUser,
     loading,
+    login,
+    logout,
+    adoptPet,
+    resetPet,
     feed,
     play,
     chat,

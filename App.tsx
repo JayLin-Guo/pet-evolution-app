@@ -9,9 +9,13 @@ import { PetStatusSidebar } from './src/components/PetStatusSidebar';
 import { MessageHistory } from './src/components/MessageHistory';
 import { GrowthStatus } from './src/components/GrowthStatus';
 import { usePet } from './src/hooks/usePet';
+import { AdoptionScreen } from './src/screens/AdoptionScreen';
+import { StartScreen } from './src/screens/StartScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
 
 export default function App() {
-  const { pet, loading, feed, play, chat, pet_touch } = usePet();
+  const { pet, currentUser, loading, login, logout, adoptPet, feed, play, chat, pet_touch } = usePet();
+  const [hasEntered, setHasEntered] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [messages, setMessages] = useState<Array<{ sender: 'user' | 'pet'; text: string }>>([]);
@@ -20,16 +24,32 @@ export default function App() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF6B35" />
-        <Text style={styles.loadingText}>加载中...</Text>
+        <Text style={styles.loadingText}>同步数据中...</Text>
       </View>
     );
   }
 
-  const handleSendMessage = (message: string, isVoice: boolean = false) => {
+  // 1. 未登录状态：显示登录页面
+  if (!currentUser) {
+    return <LoginScreen onLogin={login} />;
+  }
+
+  // 2. 已登录但无宠物状态：显示领养页面
+  if (!pet) {
+    return <AdoptionScreen onAdopt={adoptPet} />;
+  }
+
+  // 3. 有宠物但未加入世界：显示前置进入页面
+  if (!hasEntered) {
+    return <StartScreen pet={pet} onEnter={() => setHasEntered(true)} />;
+  }
+
+  // 4. 游戏主逻辑
+  const handleSendMessage = async (message: string, isVoice: boolean = false) => {
     const userMessage = { sender: 'user' as const, text: message };
     setMessages(prev => [...prev, userMessage]);
 
-    const response = chat(message);
+    const response = await chat(message);
     const petMessage = { sender: 'pet' as const, text: response };
     setMessages(prev => [...prev, petMessage]);
   };
@@ -56,6 +76,13 @@ export default function App() {
               <TouchableOpacity style={styles.navButton} onPress={() => setShowStatus(true)}>
                 <View style={styles.navIconCircle}>
                   <Text style={styles.navIcon}>📊</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* 退出登录按钮 (仅供开发/测试) */}
+              <TouchableOpacity style={styles.navButton} onPress={logout}>
+                <View style={[styles.navIconCircle, { backgroundColor: 'rgba(255, 59, 48, 0.3)' }]}>
+                  <Text style={styles.navIcon}>🚪</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -143,3 +170,4 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
 });
+

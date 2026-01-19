@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   floatingButtons: {
     position: 'absolute',
     right: 20,
-    bottom: 100,
+    bottom: 120,
     zIndex: 999,
     gap: 20,
   },

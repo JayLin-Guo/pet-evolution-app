@@ -1,0 +1,54 @@
+
+mon_earth_dragon_03.png
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+body
+  rotate: false
+  xy: 227, 218
+  size: 253, 270
+  orig: 254, 270
+  offset: 1, 0
+  index: -1
+foot01
+  rotate: true
+  xy: 642, 263
+  size: 137, 271
+  orig: 137, 271
+  offset: 0, 0
+  index: -1
+foot02
+  rotate: true
+  xy: 0, 0
+  size: 182, 210
+  orig: 182, 210
+  offset: 0, 0
+  index: -1
+hand01
+  rotate: true
+  xy: 642, 402
+  size: 86, 328
+  orig: 86, 328
+  offset: 0, 0
+  index: -1
+hand02
+  rotate: true
+  xy: 642, 175
+  size: 86, 222
+  orig: 86, 222
+  offset: 0, 0
+  index: -1
+head
+  rotate: false
+  xy: 0, 184
+  size: 225, 304
+  orig: 225, 304
+  offset: 0, 0
+  index: -1
+tail
+  rotate: false
+  xy: 482, 228
+  size: 158, 260
+  orig: 158, 260
+  offset: 0, 0
+  index: -1

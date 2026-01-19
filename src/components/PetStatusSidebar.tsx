@@ -77,6 +77,8 @@ const styles = StyleSheet.create({
     top: height * 0.2,
     width: 65,
     zIndex: 100,
+    display: 'none'
+
   },
   sidebarGlass: {
     paddingVertical: 15,

@@ -1,107 +1,34 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Pet, GrowthStage, getStageName } from '../models/PetModel';
+import React, { useMemo } from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
+import { Pet } from '../models/PetModel';
+import { SpinePet } from './SpinePet';
 
 interface PetDisplayProps {
   pet: Pet;
 }
 
 export const PetDisplay: React.FC<PetDisplayProps> = ({ pet }) => {
-  const breathAnim = useRef(new Animated.Value(1)).current;
-  const blinkAnim = useRef(new Animated.Value(1)).current;
-  const floatAnim = useRef(new Animated.Value(0)).current;
+  // 根据宠物的数值状态动态决定 Spine 的动作（Animation）
+  // 针对 Earth Dragon 素材进行适配：主要待动作为 idle2
+  const currentAnimation = useMemo(() => {
+    if (pet.hunger < 30) return 'attack1a'; // 饥饿时表现出攻击性/不安
+    if (pet.happiness > 80) return 'attack1c'; // 开心时执行一段华丽的动作
+    return 'idle2'; // 默认待机状态
+  }, [pet.hunger, pet.happiness]);
 
-  useEffect(() => {
-    // 呼吸动画
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(breathAnim, {
-          toValue: 1.05,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(breathAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    // 眨眼动画
-    const blink = () => {
-      Animated.sequence([
-        Animated.timing(blinkAnim, {
-          toValue: 0.1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(blinkAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setTimeout(blink, Math.random() * 3000 + 2000);
-      });
-    };
-    blink();
-
-    // 轻微漂浮动画
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, {
-          toValue: -10,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatAnim, {
-          toValue: 0,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  const getPetEmoji = () => {
-    if (pet.stage === GrowthStage.BABY) return '🐣';
-    if (pet.stage === GrowthStage.CHILD) return '🐱';
-    if (pet.stage === GrowthStage.TEEN) return '🦊';
-    if (pet.stage === GrowthStage.ADULT) return '🐯';
-    if (pet.stage === GrowthStage.PRIME) return '🦁';
-    if (pet.stage === GrowthStage.PEAK) {
-      if (pet.ultimateForm === 'dragon') return '🐉';
-      if (pet.ultimateForm === 'taotie') return '👹';
-      if (pet.ultimateForm === 'angel') return '👼';
-      if (pet.ultimateForm === 'phoenix') return '🦅';
-      if (pet.ultimateForm === 'qilin') return '🦄';
-    }
-    return '🐱';
-  };
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.petContainer,
-          {
-            transform: [
-              { scale: breathAnim },
-              { translateY: floatAnim }
-            ],
-          },
-        ]}
-      >
-        <Animated.Text
-          style={[
-            styles.petEmoji,
-            { opacity: blinkAnim },
-          ]}
-        >
-          {getPetEmoji()}
-        </Animated.Text>
-      </Animated.View>
+      <View style={styles.petPlatform}>
+        {/* 这里使用了我们新创建的 Spine 渲染器 */}
+        <SpinePet 
+          pet={pet} 
+          animation={currentAnimation} 
+        />
+        
+        {/* 底部阴影效果 */}
+        <View style={styles.shadow} />
+      </View>
     </View>
   );
 };
@@ -112,12 +39,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  petContainer: {
+  petPlatform: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  petEmoji: {
-    fontSize: 150,
+  shadow: {
+    width: 120,
+    height: 15,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: 60,
+    marginTop: -20,
+    transform: [{ scaleX: 1.5 }],
   },
 });
+
 
