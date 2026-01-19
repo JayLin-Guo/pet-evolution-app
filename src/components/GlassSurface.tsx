@@ -62,13 +62,13 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
+    borderRadius: 18,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
   },
   blur: {
     overflow: 'hidden',
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   borderHighlight: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 24,
+    borderRadius: 18,
     borderWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.6)',
     borderLeftColor: 'rgba(255, 255, 255, 0.4)',

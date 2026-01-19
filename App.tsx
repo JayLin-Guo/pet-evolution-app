@@ -5,6 +5,7 @@ import { GlassSurface } from './src/components/GlassSurface';
 import { PetDisplay } from './src/components/PetDisplay';
 import { ActionSidebar } from './src/components/ActionSidebar';
 import { ChatInput } from './src/components/ChatInput';
+import { PetStatusSidebar } from './src/components/PetStatusSidebar';
 import { MessageHistory } from './src/components/MessageHistory';
 import { GrowthStatus } from './src/components/GrowthStatus';
 import { usePet } from './src/hooks/usePet';
@@ -39,6 +40,9 @@ export default function App() {
       <View style={styles.mainContent}>
         <PetDisplay pet={pet} />
 
+        {/* 左侧悬浮状态栏 */}
+        <PetStatusSidebar pet={pet} />
+
         {/* 悬浮顶部导航栏 - 毛玻璃效果 */}
         <View style={styles.floatingNavbar}>
           <GlassSurface style={styles.navGlass}>
@@ -66,6 +70,7 @@ export default function App() {
       <View style={styles.floatingInputContainer}>
         <ChatInput onSendMessage={handleSendMessage} />
       </View>
+
 
       {/* 消息历史弹窗 */}
       <Modal visible={showHistory} animationType="slide" transparent>
@@ -132,9 +137,9 @@ const styles = StyleSheet.create({
   },
   floatingInputContainer: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    bottom: 30,
+    left: 16,
+    right: 16,
     zIndex: 100,
   },
 });

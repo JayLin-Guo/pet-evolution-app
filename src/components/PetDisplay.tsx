@@ -102,26 +102,6 @@ export const PetDisplay: React.FC<PetDisplayProps> = ({ pet }) => {
           {getPetEmoji()}
         </Animated.Text>
       </Animated.View>
-
-      {/* 等级标签 */}
-      <View style={styles.levelBadge}>
-        <Text style={styles.levelText}>Lv.{pet.level}</Text>
-      </View>
-
-      {/* 经验条 */}
-      <View style={styles.expContainer}>
-        <View style={styles.expBar}>
-          <View
-            style={[
-              styles.expFill,
-              { width: `${(pet.exp / (pet.level * 100)) * 100}%` },
-            ]}
-          />
-        </View>
-        <Text style={styles.expText}>
-          {pet.exp}/{pet.level * 100}
-        </Text>
-      </View>
     </View>
   );
 };
@@ -139,52 +119,5 @@ const styles = StyleSheet.create({
   petEmoji: {
     fontSize: 150,
   },
-  levelBadge: {
-    position: 'absolute',
-    top: 100,
-    right: 50,
-    backgroundColor: '#FF6B35',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  levelText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  expContainer: {
-    position: 'absolute',
-    bottom: 50,
-    width: '80%',
-    alignItems: 'center',
-  },
-  expBar: {
-    width: '100%',
-    height: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 5,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  expFill: {
-    height: '100%',
-    backgroundColor: '#FFD700',
-    borderRadius: 3,
-  },
-  expText: {
-    fontSize: 12,
-    color: '#fff',
-    marginTop: 5,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
 });
+
