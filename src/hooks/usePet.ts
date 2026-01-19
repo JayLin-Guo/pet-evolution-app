@@ -125,13 +125,7 @@ export const usePet = () => {
     [pet, currentUser],
   );
 
-  // 退出/注销
-  const resetPet = async () => {
-    if (currentUser) {
-      await AsyncStorage.removeItem(`${STORAGE_KEY}_${currentUser.userId}`);
-      setPet(null);
-    }
-  };
+
 
   // 喂食
   const feed = useCallback(
@@ -172,9 +166,9 @@ export const usePet = () => {
         if (statusUpdate) {
           const newPet = { ...pet, ...statusUpdate };
 
-          // 如果 API 返回了经验值增加，前端可以在此处处理升级逻辑
-          if (statusUpdate.exp) {
-            addExp(newPet, 0); // 触发内部升级检查逻辑
+          // 如果 API 返回了经验值增加，触发升级检查逻辑
+          if (statusUpdate.exp !== undefined) {
+            checkLevelUp(newPet);
           }
 
           setPet(newPet);
@@ -199,12 +193,6 @@ export const usePet = () => {
       console.error("抚摸同步失败:", e);
     }
   }, [pet]);
-
-  // 增加经验值
-  const addExp = (currentPet: Pet, amount: number) => {
-    currentPet.exp += amount;
-    checkLevelUp(currentPet);
-  };
 
   // 检查升级
   const checkLevelUp = (currentPet: Pet) => {
@@ -270,19 +258,7 @@ export const usePet = () => {
     else currentPet.ultimateForm = UltimateForm.QILIN;
   };
 
-  const updatePetStatus = async () => {
-    if (!pet) return;
-    const now = Date.now();
-    const timePassed = (now - pet.lastInteractTime) / 1000 / 60;
-    if (timePassed >= 10) {
-      const newPet = { ...pet };
-      newPet.hunger = Math.max(0, newPet.hunger - 5);
-      newPet.happiness = Math.max(0, newPet.happiness - 3);
-      newPet.lastInteractTime = now;
-      setPet(newPet);
-      await syncPetWithServer(newPet);
-    }
-  };
+
 
   return {
     pet,
@@ -291,7 +267,6 @@ export const usePet = () => {
     login,
     logout,
     adoptPet,
-    resetPet,
     feed,
     play,
     chat,

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Pet } from '../models/PetModel';
 import { SpinePet } from './SpinePet';
 
@@ -8,13 +8,22 @@ interface PetDisplayProps {
 }
 
 export const PetDisplay: React.FC<PetDisplayProps> = ({ pet }) => {
-  // 根据宠物的数值状态动态决定 Spine 的动作（Animation）
-  // 针对 Earth Dragon 素材进行适配：主要待动作为 idle2
-  const currentAnimation = useMemo(() => {
-    if (pet.hunger < 30) return 'attack1a'; // 饥饿时表现出攻击性/不安
-    if (pet.happiness > 80) return 'attack1c'; // 开心时执行一段华丽的动作
-    return 'idle2'; // 默认待机状态
-  }, [pet.hunger, pet.happiness]);
+  // 临时固定使用 idle2 动画进行测试
+  // idle2 是有完整动画数据的
+  const currentAnimation = 'idle2';
+  
+  // TODO: 恢复动态动画逻辑（注意：attack1a 是空动画，不要使用）
+  // 可用的动画：idle1, idle2, attack1b, attack1c, attack1d, attack1e, 
+  //           attack2a, attack2b, catch, die, hitback, start
+  // 空动画（不要使用）：attack1a
+  //
+  // const currentAnimation = useMemo(() => {
+  //   if (pet.health < 20) return 'die';
+  //   if (pet.hunger < 30) return 'attack1b';  // 改用 attack1b，不用 attack1a
+  //   if (pet.happiness > 80) return 'attack1c';
+  //   if (pet.happiness > 60) return 'idle1';
+  //   return 'idle2';
+  // }, [pet.hunger, pet.happiness, pet.health]);
 
 
   return (

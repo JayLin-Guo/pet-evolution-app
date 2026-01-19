@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface ChatInputProps {
-  onSendMessage: (message: string, isVoice: boolean) => void;
+  onSendMessage: (message: string) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
@@ -21,7 +21,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
 
   const handleSend = () => {
     if (message.trim()) {
-      onSendMessage(message, false);
+      onSendMessage(message);
       setMessage('');
     }
   };
@@ -62,7 +62,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
         ]).start(() => {
           setIsRecording(false);
           if (!shouldCancel) {
-            onSendMessage('语音消息', true);
+            onSendMessage('语音消息');
           }
         });
       },

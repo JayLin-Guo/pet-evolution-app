@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Dimensions, Platform, Text } from 'react-native';
+import { View, StyleSheet, Dimensions, Text } from 'react-native';
 import { Pet, GrowthStage } from '../models/PetModel';
 
 const { width } = Dimensions.get('window');
@@ -12,23 +12,44 @@ interface SpinePetProps {
 export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const assetFolder = React.useMemo(() => {
+  // 根据成长阶段选择资源文件夹和文件名
+  const assetConfig = React.useMemo(() => {
+    // 目前只有 mon_earth_dragon_01_v38 可用，其他阶段暂时复用
+    // TODO: 后续添加其他阶段的资源文件
     switch (pet.stage) {
       case GrowthStage.BABY:
-      case GrowthStage.CHILD: return 'mon_earth_dragon_01_v38';
+      case GrowthStage.CHILD:
+        return {
+          folder: 'mon_earth_dragon_01_v38',
+          baseName: 'mon_earth_dragon_01'
+        };
       case GrowthStage.TEEN:
-      case GrowthStage.ADULT: return 'mon_earth_dragon_02';
+      case GrowthStage.ADULT:
+        // TODO: 替换为实际的 teen/adult 资源
+        return {
+          folder: 'mon_earth_dragon_01_v38',
+          baseName: 'mon_earth_dragon_01'
+        };
       case GrowthStage.PRIME:
-      case GrowthStage.PEAK: return 'mon_earth_dragon_03';
-      default: return 'mon_earth_dragon_01_v38';
+      case GrowthStage.PEAK:
+        // TODO: 替换为实际的 prime/peak 资源
+        return {
+          folder: 'mon_earth_dragon_01_v38',
+          baseName: 'mon_earth_dragon_01'
+        };
+      default:
+        return {
+          folder: 'mon_earth_dragon_01_v38',
+          baseName: 'mon_earth_dragon_01'
+        };
     }
   }, [pet.stage]);
 
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    // 在浏览器环境中加载 Spine
+    if (typeof window === 'undefined') return;
 
     const loadSpine = async () => {
       if (!(window as any).spine) {
@@ -45,7 +66,7 @@ export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) 
       if (!containerRef.current) return;
 
       const spine = (window as any).spine;
-      const assetsPath = window.location.origin + `/assets/${assetFolder}/`;
+      const assetsPath = window.location.origin + `/assets/${assetConfig.folder}/`;
       
       try {
         containerRef.current.innerHTML = "";
@@ -59,13 +80,15 @@ export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) 
         }
 
         playerRef.current = new spine.SpinePlayer(playerDiv, {
-          jsonUrl: assetsPath + "mon_earth_dragon_01.json",
-          atlasUrl: assetsPath + "mon_earth_dragon_01.atlas",
+          jsonUrl: assetsPath + `${assetConfig.baseName}.json`,
+          atlasUrl: assetsPath + `${assetConfig.baseName}.atlas`,
           animation: animation,
           premultipliedAlpha: true,
           backgroundColor: "#00000000",
           alpha: true,
           showControls: false,
+          preserveDrawingBuffer: false,
+          fitToCanvas: true,
           viewport: {
             padLeft: "10%",
             padRight: "10%",
@@ -73,17 +96,37 @@ export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) 
             padBottom: "10%"
           },
           success: () => {
-            setIsLoading(false);
             setError(null);
+            console.log('✅ Spine 加载成功！');
+            // 确保动画开始播放
+            if (playerRef.current?.skeleton?.data?.animations) {
+              const animations = playerRef.current.skeleton.data.animations.map((anim: any) => anim.name);
+              console.log('📋 可用动画:', animations);
+              console.log('🎬 尝试播放动画:', animation);
+              
+              const hasAnimation = animations.includes(animation);
+              if (hasAnimation) {
+                console.log('✅ 动画存在，开始播放');
+                playerRef.current.setAnimation(animation, true);
+                
+                // 检查动画状态
+                setTimeout(() => {
+                  if (playerRef.current?.animationState) {
+                    console.log('🎭 动画状态:', playerRef.current.animationState);
+                  }
+                }, 100);
+              } else {
+                console.log('⚠️ 动画不存在，使用 idle2');
+                playerRef.current.setAnimation('idle2', true);
+              }
+            }
           },
-          error: (p: any, msg: string) => {
+          error: (_: any, msg: string) => {
             setError(msg);
-            setIsLoading(false);
           }
         });
       } catch (e: any) {
         setError(e.message);
-        setIsLoading(false);
       }
     };
 
@@ -94,20 +137,29 @@ export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) 
         try { playerRef.current.dispose(); } catch(e) {}
       }
     };
-  }, [assetFolder]);
+  }, [assetConfig, animation]);
 
   useEffect(() => {
-    if (playerRef.current && playerRef.current.skeleton) {
-      try {
+    if (!playerRef.current || !playerRef.current.skeleton) return;
+    
+    try {
+      const animationData = playerRef.current.skeleton.data;
+      const hasAnimation = animationData.animations.some((anim: any) => anim.name === animation);
+      
+      if (hasAnimation) {
         playerRef.current.setAnimation(animation, true);
-      } catch (e) {}
+      } else {
+        playerRef.current.setAnimation('idle2', true);
+      }
+    } catch (e) {
+      console.error('切换动画失败:', e);
     }
   }, [animation]);
 
-  if (Platform.OS !== 'web') {
+  if (typeof window === 'undefined') {
     return (
       <View style={styles.container}>
-        <Text style={styles.placeholder}>移动端开发中...</Text>
+        <Text style={styles.placeholder}>服务端渲染中...</Text>
       </View>
     );
   }
@@ -119,6 +171,7 @@ export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) 
           <Text style={styles.errorText}>加载失败: {error}</Text>
         </View>
       )}
+      
       <div 
         ref={containerRef} 
         style={{ 

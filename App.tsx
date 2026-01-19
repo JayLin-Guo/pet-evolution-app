@@ -45,7 +45,7 @@ export default function App() {
   }
 
   // 4. 游戏主逻辑
-  const handleSendMessage = async (message: string, isVoice: boolean = false) => {
+  const handleSendMessage = async (message: string) => {
     const userMessage = { sender: 'user' as const, text: message };
     setMessages(prev => [...prev, userMessage]);
 
