@@ -31,7 +31,6 @@ export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) 
     if (Platform.OS !== 'web') return;
 
     const loadSpine = async () => {
-      // 加载 Spine Player 脚本
       if (!(window as any).spine) {
         const script = document.createElement('script');
         script.src = "https://cdn.jsdelivr.net/npm/@esotericsoftware/spine-player@4.2/dist/iife/spine-player.js";
@@ -97,32 +96,24 @@ export const SpinePet: React.FC<SpinePetProps> = ({ pet, animation = 'idle2' }) 
     };
   }, [assetFolder]);
 
-  // 当动画改变时更新
   useEffect(() => {
     if (playerRef.current && playerRef.current.skeleton) {
       try {
         playerRef.current.setAnimation(animation, true);
-      } catch (e) {
-        console.warn('Animation not found:', animation);
-      }
+      } catch (e) {}
     }
   }, [animation]);
 
   if (Platform.OS !== 'web') {
     return (
       <View style={styles.container}>
-        <Text style={styles.placeholder}>移动端 Spine 渲染开发中...</Text>
+        <Text style={styles.placeholder}>移动端开发中...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <Text style={styles.loadingText}>加载宠物中...</Text>
-        </View>
-      )}
       {error && (
         <View style={styles.errorOverlay}>
           <Text style={styles.errorText}>加载失败: {error}</Text>
@@ -150,21 +141,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    zIndex: 10,
-  },
-  loadingText: {
-    color: '#fff',
-    fontSize: 14,
   },
   errorOverlay: {
     position: 'absolute',
