@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { GlassSurface } from './GlassSurface';
 
 interface ChatInputProps {
   onSendMessage: (message: string, isVoice: boolean) => void;
@@ -7,6 +8,7 @@ interface ChatInputProps {
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   const [message, setMessage] = useState('');
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
   const handleSend = () => {
@@ -22,109 +24,172 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
 
   const handleVoiceRelease = () => {
     setIsRecording(false);
-    onSendMessage('语音消息', true);
+    if (isRecording) {
+      onSendMessage('语音消息', true);
+    }
+  };
+
+  const toggleInputMode = () => {
+    setIsVoiceMode(!isVoiceMode);
   };
 
   return (
-    <View style={styles.container}>
-      {/* 语音按钮 */}
-      <TouchableOpacity
-        style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
-        onPressIn={handleVoicePress}
-        onPressOut={handleVoiceRelease}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.voiceIcon}>{isRecording ? '🔴' : '🎤'}</Text>
-      </TouchableOpacity>
-
-      {/* 输入框 */}
-      <TextInput
-        style={styles.input}
-        placeholder="说点什么..."
-        placeholderTextColor="#999"
-        value={message}
-        onChangeText={setMessage}
-        onSubmitEditing={handleSend}
-        returnKeyType="send"
-        multiline
-      />
-
-      {/* 发送按钮 */}
-      {message.trim() ? (
+    <GlassSurface style={styles.container}>
+      <View style={styles.contentContainer}>
+        {/* 左侧：语音/键盘切换按钮 */}
         <TouchableOpacity
-          style={styles.sendButton}
-          onPress={handleSend}
-          activeOpacity={0.8}
+          style={styles.modeButton}
+          onPress={toggleInputMode}
+          activeOpacity={0.6}
         >
-          <Text style={styles.sendIcon}>➤</Text>
+          <View style={styles.iconWrapper}>
+            <Text style={styles.modeIcon}>{isVoiceMode ? '⌨️' : '🎤'}</Text>
+          </View>
         </TouchableOpacity>
-      ) : (
-        <View style={styles.sendButtonPlaceholder} />
-      )}
-    </View>
+
+        {/* 中间：输入框或语音按钮 */}
+        <View style={styles.inputWrapper}>
+          {isVoiceMode ? (
+            <TouchableOpacity
+              style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
+              onPressIn={handleVoicePress}
+              onPressOut={handleVoiceRelease}
+              activeOpacity={1}
+            >
+              <Text style={[styles.voiceButtonText, isRecording && styles.voiceButtonTextActive]}>
+                {isRecording ? '🔴 松开 结束' : '按住 说话'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <TextInput
+              style={styles.input}
+              placeholder="和宠物说点什么..."
+              placeholderTextColor="rgba(0, 0, 0, 0.35)"
+              value={message}
+              onChangeText={setMessage}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+              multiline
+            />
+          )}
+        </View>
+
+        {/* 右侧：发送按钮或加号 */}
+        {!isVoiceMode && message.trim() ? (
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={handleSend}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.sendButtonText}>发送</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.plusButton}
+            onPress={() => {}}
+            activeOpacity={0.6}
+          >
+            <View style={styles.iconWrapper}>
+              <Text style={styles.plusIcon}>➕</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+    </GlassSurface>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 28,
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     paddingHorizontal: 8,
     paddingVertical: 8,
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
   },
-  voiceButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0F0F0',
+  modeButton: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.2s',
   },
-  voiceButtonActive: {
-    backgroundColor: '#FF3B30',
-    transform: [{ scale: 1.1 }],
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
   },
-  voiceIcon: {
-    fontSize: 24,
+  modeIcon: {
+    fontSize: 22,
+  },
+  inputWrapper: {
+    flex: 1,
   },
   input: {
-    flex: 1,
     fontSize: 16,
-    color: '#333',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    maxHeight: 80,
-    minHeight: 44,
+    color: '#000',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    maxHeight: 100,
+    minHeight: 40,
+    lineHeight: 22,
   },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#34C759',
+  voiceButton: {
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#34C759',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  voiceButtonActive: {
+    backgroundColor: 'rgba(255, 59, 48, 0.25)',
+    borderColor: 'rgba(255, 59, 48, 0.5)',
+  },
+  voiceButtonText: {
+    fontSize: 15,
+    color: 'rgba(0, 0, 0, 0.7)',
+    fontWeight: '500',
+    letterSpacing: 0.5,
+  },
+  voiceButtonTextActive: {
+    color: '#FF3B30',
+    fontWeight: '600',
+  },
+  sendButton: {
+    backgroundColor: '#07C160',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    minHeight: 40,
+    justifyContent: 'center',
+    shadowColor: '#07C160',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
     elevation: 4,
   },
-  sendIcon: {
-    fontSize: 20,
+  sendButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  sendButtonPlaceholder: {
-    width: 44,
-    height: 44,
+  plusButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusIcon: {
+    fontSize: 20,
   },
 });

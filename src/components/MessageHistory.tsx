@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Sheet } from './ios/Sheet';
+import { Card } from './ios/Card';
 
 interface Message {
   sender: 'user' | 'pet';
@@ -13,91 +15,77 @@ interface MessageHistoryProps {
 
 export const MessageHistory: React.FC<MessageHistoryProps> = ({ messages, onClose }) => {
   return (
-    <View style={styles.overlay}>
-      <View style={styles.modal}>
-        <View style={styles.header}>
-          <Text style={styles.title}>💬 消息记录</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.closeButton}>✕</Text>
-          </TouchableOpacity>
+    <Sheet visible={true} onClose={onClose} title="消息记录">
+      {messages.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>💬</Text>
+          <Text style={styles.emptyText}>还没有消息记录</Text>
+          <Text style={styles.emptySubtext}>和宠物聊聊天吧</Text>
         </View>
-
-        <ScrollView style={styles.messageList}>
-          {messages.length === 0 ? (
-            <Text style={styles.emptyText}>还没有消息记录</Text>
-          ) : (
-            messages.map((msg, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.messageBubble,
-                  msg.sender === 'user' ? styles.userBubble : styles.petBubble
-                ]}
-              >
-                <Text style={styles.messageText}>
-                  {msg.sender === 'user' ? '我' : '宠物'}: {msg.text}
-                </Text>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </View>
-    </View>
+      ) : (
+        <View style={styles.messageList}>
+          {messages.map((msg, index) => (
+            <Card
+              key={index}
+              style={[
+                styles.messageBubble,
+                msg.sender === 'user' ? styles.userBubble : styles.petBubble,
+              ]}
+            >
+              <Text style={styles.senderLabel}>
+                {msg.sender === 'user' ? '我' : '🐱 宠物'}
+              </Text>
+              <Text style={styles.messageText}>{msg.text}</Text>
+            </Card>
+          ))}
+        </View>
+      )}
+    </Sheet>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modal: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  emptyContainer: {
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingVertical: 60,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  closeButton: {
-    fontSize: 28,
-    color: '#999',
-  },
-  messageList: {
-    padding: 20,
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
   },
   emptyText: {
-    textAlign: 'center',
-    color: '#999',
-    fontSize: 16,
-    marginTop: 50,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 15,
+    color: '#8E8E93',
+  },
+  messageList: {
+    gap: 12,
   },
   messageBubble: {
     padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-    maxWidth: '80%',
   },
   userBubble: {
-    backgroundColor: '#E3F2FD',
-    alignSelf: 'flex-end',
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderColor: 'rgba(0, 122, 255, 0.2)',
   },
   petBubble: {
-    backgroundColor: '#FFF3E0',
-    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    borderColor: 'rgba(255, 149, 0, 0.2)',
+  },
+  senderLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 4,
   },
   messageText: {
-    fontSize: 14,
+    fontSize: 16,
+    color: '#000',
+    lineHeight: 22,
   },
 });

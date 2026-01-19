@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { GlassSurface } from './src/components/GlassSurface';
 import { PetDisplay } from './src/components/PetDisplay';
 import { ActionSidebar } from './src/components/ActionSidebar';
 import { ChatInput } from './src/components/ChatInput';
@@ -38,19 +39,23 @@ export default function App() {
       <View style={styles.mainContent}>
         <PetDisplay pet={pet} />
 
-        {/* 悬浮顶部导航栏 - 右侧 */}
+        {/* 悬浮顶部导航栏 - 毛玻璃效果 */}
         <View style={styles.floatingNavbar}>
-          <TouchableOpacity style={styles.navButton} onPress={() => setShowHistory(true)}>
-            <View style={styles.navIconCircle}>
-              <Text style={styles.navIcon}>💬</Text>
-            </View>
-          </TouchableOpacity>
+          <GlassSurface style={styles.navGlass}>
+            <View style={styles.navContent}>
+              <TouchableOpacity style={styles.navButton} onPress={() => setShowHistory(true)}>
+                <View style={styles.navIconCircle}>
+                  <Text style={styles.navIcon}>💬</Text>
+                </View>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.navButton} onPress={() => setShowStatus(true)}>
-            <View style={styles.navIconCircle}>
-              <Text style={styles.navIcon}>📊</Text>
+              <TouchableOpacity style={styles.navButton} onPress={() => setShowStatus(true)}>
+                <View style={styles.navIconCircle}>
+                  <Text style={styles.navIcon}>📊</Text>
+                </View>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </GlassSurface>
         </View>
 
         {/* 右侧悬浮操作按钮 */}
@@ -101,9 +106,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     right: 20,
-    flexDirection: 'row',
-    gap: 12,
     zIndex: 100,
+  },
+  navGlass: {
+    borderRadius: 24,
+  },
+  navContent: {
+    flexDirection: 'row',
+    padding: 6,
+    gap: 8,
   },
   navButton: {
     padding: 0,
@@ -112,14 +123,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
   },
   navIcon: {
     fontSize: 22,
