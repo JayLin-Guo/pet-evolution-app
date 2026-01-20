@@ -1,4 +1,4 @@
-import { Pet, GrowthStage, UltimateForm } from "../models/PetModel";
+import { Pet, GrowthStage, UltimateForm, computeSpineResourceSuffix } from "../models/PetModel";
 
 /**
  * 模拟基础宠物数据
@@ -9,6 +9,7 @@ export const MOCK_PET: Pet = {
   name: "哈士奇(Mock)",
   stage: GrowthStage.CHILD,
   subStage: 2,
+  spineResourceSuffix: computeSpineResourceSuffix({ stage: GrowthStage.CHILD, subStage: 2, ultimateForm: null }),
   level: 5,
   exp: 240,
   attributes: {

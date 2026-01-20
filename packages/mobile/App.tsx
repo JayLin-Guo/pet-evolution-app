@@ -1,24 +1,63 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
-import { GlassSurface } from './src/components/GlassSurface';
-import { PetDisplay } from './src/components/PetDisplay';
-import { ActionSidebar } from './src/components/ActionSidebar';
-import { ChatInput } from './src/components/ChatInput';
-import { PetStatusSidebar } from './src/components/PetStatusSidebar';
-import { MessageHistory } from './src/components/MessageHistory';
-import { GrowthStatus } from './src/components/GrowthStatus';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { usePet } from '@pet-evolution/shared';
 import { AdoptionScreen } from './src/screens/AdoptionScreen';
 import { StartScreen } from './src/screens/StartScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { PetWebView } from './src/webview/PetWebView';
+
+function getDevMachineHostIp(): string | null {
+  // Expo 会在 DEV 下注入 debuggerHost，形如 "192.168.1.12:8085"
+  // 在 release 下该字段通常不存在
+  const maybe = (globalThis as any)?.__expo?.settings?.debuggerHost;
+  if (typeof maybe !== 'string') return null;
+  const host = maybe.split(':')[0];
+  return host || null;
+}
+
+function resolveWebPetUrl(): string {
+  // 1) 优先使用 env 显式配置（最稳）—— 注意 RN 下可能没有 process，需要先判断
+  if (typeof process !== 'undefined' && (process as any).env) {
+    const raw = (process as any).env.EXPO_PUBLIC_WEB_PET_URL;
+    if (typeof raw === 'string' && raw.trim()) {
+      return raw.trim();
+    }
+  }
+
+  // 2) DEV 下自动推导局域网 IP（避免真机访问 localhost 失败）
+  const ip = getDevMachineHostIp();
+  if (ip) return `http://${ip}:3000`;
+
+  // 3) 兜底（模拟器上有时可用；真机大概率不可用）
+  return 'http://localhost:3000';
+}
+
+/**
+ * 从环境变量读取环境标识（test/product/dev）
+ */
+function resolveEnvironment(): "test" | "product" | "dev" | undefined {
+  if (typeof process !== 'undefined' && (process as any).env) {
+    const raw = (process as any).env.EXPO_PUBLIC_PET_ENVIRONMENT;
+    if (typeof raw === 'string') {
+      const env = raw.trim().toLowerCase();
+      if (env === 'test' || env === 'product' || env === 'dev') {
+        return env;
+      }
+    }
+  }
+  return 'test';
+}
+
+/**
+ * 从环境变量读取资源后缀（如 "mon_earth_dragon_01_v38"）
+ */
+// NOTE: resourceSuffix 应由服务层/后端根据 pet 阶段/形态计算并下发（Pet.spineResourceSuffix）
+// 这里不再从 env 读取，避免不同阶段资源无法动态切换
 
 export default function App() {
   const { pet, currentUser, loading, login, logout, adoptPet, feed, play, chat, pet_touch } = usePet();
   const [hasEntered, setHasEntered] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showStatus, setShowStatus] = useState(false);
-  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'pet'; text: string }>>([]);
 
   if (loading) {
     return (
@@ -43,71 +82,29 @@ export default function App() {
   if (!hasEntered) {
     return <StartScreen pet={pet} onEnter={() => setHasEntered(true)} />;
   }
+  
 
-  // 4. 游戏主逻辑
-  const handleSendMessage = async (message: string) => {
-    const userMessage = { sender: 'user' as const, text: message };
-    setMessages(prev => [...prev, userMessage]);
+  // 4. 游戏主逻辑：宠物主界面迁移到 web-pet，通过 WebView 嵌入
+  // 开发期：建议将这里替换成局域网 IP（手机/模拟器能访问到的地址），或通过 EXPO_PUBLIC_WEB_PET_URL 配置
+  const webUrl = resolveWebPetUrl();
+  const environment = resolveEnvironment();
+  const resourceSuffix = pet.spineResourceSuffix;
 
-    const response = await chat(message);
-    const petMessage = { sender: 'pet' as const, text: response };
-    setMessages(prev => [...prev, petMessage]);
-  };
 
   return (
     <View style={styles.container}>
-      {/* 主内容区 - 宠物背景 */}
-      <View style={styles.mainContent}>
-        <PetDisplay pet={pet} />
-
-        {/* 左侧悬浮状态栏 */}
-        <PetStatusSidebar pet={pet} />
-
-        {/* 悬浮顶部导航栏 - 毛玻璃效果 */}
-        <View style={styles.floatingNavbar}>
-          <GlassSurface style={styles.navGlass}>
-            <View style={styles.navContent}>
-              <TouchableOpacity style={styles.navButton} onPress={() => setShowHistory(true)}>
-                <View style={styles.navIconCircle}>
-                  <Text style={styles.navIcon}>💬</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.navButton} onPress={() => setShowStatus(true)}>
-                <View style={styles.navIconCircle}>
-                  <Text style={styles.navIcon}>📊</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* 退出登录按钮 (仅供开发/测试) */}
-              <TouchableOpacity style={styles.navButton} onPress={logout}>
-                <View style={[styles.navIconCircle, { backgroundColor: 'rgba(255, 59, 48, 0.3)' }]}>
-                  <Text style={styles.navIcon}>🚪</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </GlassSurface>
-        </View>
-
-        {/* 右侧悬浮操作按钮 */}
-        <ActionSidebar onFeed={feed} onPlay={play} onTouch={pet_touch} />
-      </View>
-
-      {/* 悬浮底部输入栏 */}
-      <View style={styles.floatingInputContainer}>
-        <ChatInput onSendMessage={handleSendMessage} />
-      </View>
-
-
-      {/* 消息历史弹窗 */}
-      <Modal visible={showHistory} animationType="slide" transparent>
-        <MessageHistory messages={messages} onClose={() => setShowHistory(false)} />
-      </Modal>
-
-      {/* 成长状态弹窗 */}
-      <Modal visible={showStatus} animationType="slide" transparent>
-        <GrowthStatus pet={pet} onClose={() => setShowStatus(false)} />
-      </Modal>
+     
+      <PetWebView
+        pet={pet}
+        webUrl={webUrl}
+        environment={environment}
+        resourceSuffix={resourceSuffix}
+        onFeed={(foodValue) => feed(foodValue)}
+        onPlay={play}
+        onTouch={pet_touch}
+        onChat={chat}
+        onLogout={logout}
+      />
 
       <StatusBar style="light" />
     </View>
@@ -117,7 +114,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#87CEEB',
+    backgroundColor: '#000',
   },
   loadingContainer: {
     flex: 1,
@@ -129,45 +126,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#fff',
-  },
-  mainContent: {
-    flex: 1,
-    position: 'relative',
-  },
-  floatingNavbar: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 100,
-  },
-  navGlass: {
-    borderRadius: 24,
-  },
-  navContent: {
-    flexDirection: 'row',
-    padding: 6,
-    gap: 8,
-  },
-  navButton: {
-    padding: 0,
-  },
-  navIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navIcon: {
-    fontSize: 22,
-  },
-  floatingInputContainer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 16,
-    right: 16,
-    zIndex: 100,
   },
 });
 

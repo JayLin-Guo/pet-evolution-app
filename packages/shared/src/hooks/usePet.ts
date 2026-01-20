@@ -4,6 +4,7 @@ import {
   GrowthStage,
   UltimateForm,
   createNewPet,
+  computeSpineResourceSuffix,
 } from "../models/PetModel";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { petApi } from "../api/pet";
@@ -233,6 +234,12 @@ export const usePet = () => {
     if (currentPet.stage === GrowthStage.PEAK && !currentPet.ultimateForm) {
       determineUltimateForm(currentPet);
     }
+    // 阶段/形态变化后，更新资源后缀（生产建议由服务端返回，这里为 mock/过渡兜底）
+    currentPet.spineResourceSuffix = computeSpineResourceSuffix({
+      stage: currentPet.stage,
+      subStage: currentPet.subStage,
+      ultimateForm: currentPet.ultimateForm,
+    });
   };
 
   /**

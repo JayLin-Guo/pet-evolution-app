@@ -33,6 +33,11 @@ export interface Pet {
   name: string;
   stage: GrowthStage;
   subStage: number;
+  /**
+   * 对应 Spine 静态资源目录后缀（由服务层/后端计算并下发）
+   * 例如：mon_earth_dragon_01_v38
+   */
+  spineResourceSuffix?: string;
   level: number;
   exp: number;
   attributes: PetAttributes;
@@ -45,6 +50,17 @@ export interface Pet {
   lastInteractTime: number;
 }
 
+/**
+ * 根据宠物当前形态/阶段计算 Spine 资源目录后缀
+ * - 这里先给出一个默认映射（便于本地 mock / 过渡）
+ * - 生产环境建议由服务端返回 Pet.spineResourceSuffix
+ */
+export const computeSpineResourceSuffix = (pet: Pick<Pet, "stage" | "subStage" | "ultimateForm">): string => {
+  // TODO: 后续按 stage/subStage/ultimateForm 映射到不同资源包
+  // 当前先统一走同一条龙资源，保证链路跑通
+  return "mon_earth_dragon_01_v38";
+};
+
 // 创建新宠物
 export const createNewPet = (ownerId: string = "guest_user"): Pet => ({
   id: `pet_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -52,6 +68,7 @@ export const createNewPet = (ownerId: string = "guest_user"): Pet => ({
   name: "小宠物",
   stage: GrowthStage.BABY,
   subStage: 1,
+  spineResourceSuffix: computeSpineResourceSuffix({ stage: GrowthStage.BABY, subStage: 1, ultimateForm: null }),
   level: 1,
   exp: 0,
   attributes: {
