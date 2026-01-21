@@ -139,7 +139,7 @@ export const createNewPet = (ownerId: string = "guest_user"): Pet => {
     name: "小宠物",
     stage: GrowthStage.BABY,
     subStage: 1,
-    spinePath: "/mon_earth_dragon_01_v38/mon_earth_dragon_01",
+    spinePath: "/mon_earth_dragon_01_v38/mon_earth_dragon_03",
     level: 1,
     exp: 0,
     attributes: {

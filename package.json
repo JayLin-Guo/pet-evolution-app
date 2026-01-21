@@ -10,6 +10,7 @@
     "mobile:clean": "rm -rf .expo packages/mobile/.expo packages/mobile/node_modules/.cache",
     "web-pet": "pnpm --filter @pet-evolution/web-pet dev",
     "web-pet:build": "pnpm --filter @pet-evolution/web-pet build",
+    "web-mobile-pet:build": "pnpm --filter @pet-evolution/mobile export:web",
     "web-pet:preview": "pnpm --filter @pet-evolution/web-pet preview",
     "dev": "pnpm web-pet",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist .expo packages/mobile/.expo",

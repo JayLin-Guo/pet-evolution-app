@@ -17,20 +17,14 @@ function getDevMachineHostIp(): string | null {
 }
 
 function resolveWebPetUrl(): string {
-  // 1) 优先使用 env 显式配置（最稳）—— 注意 RN 下可能没有 process，需要先判断
-  if (typeof process !== "undefined" && (process as any).env) {
-    const raw = (process as any).env.EXPO_PUBLIC_WEB_PET_URL;
-    if (typeof raw === "string" && raw.trim()) {
-      return raw.trim();
-    }
+  // 开发环境：使用本地服务 (优先使用 IP 以支持真机调试)
+  if (__DEV__) {
+    const ip = getDevMachineHostIp();
+    return ip ? `http://${ip}:3000` : "http://localhost:3000";
   }
 
-  // 2) DEV 下自动推导局域网 IP（避免真机访问 localhost 失败）
-  const ip = getDevMachineHostIp();
-  if (ip) return `http://${ip}:3000`;
-
-  // 3) 兜底（模拟器上有时可用；真机大概率不可用）
-  return "http://localhost:3000";
+  // 生产/构建环境：指向线上 H5 地址
+  return "http://47.93.247.175:8081";
 }
 
 /**
@@ -91,6 +85,7 @@ export default function App() {
   // 4. 游戏主逻辑：宠物主界面迁移到 web-pet，通过 WebView 嵌入
   // 开发期：建议将这里替换成局域网 IP（手机/模拟器能访问到的地址），或通过 EXPO_PUBLIC_WEB_PET_URL 配置
   const webUrl = resolveWebPetUrl();
+  console.log("webUrl", webUrl);
   const environment = resolveEnvironment();
 
   return (
