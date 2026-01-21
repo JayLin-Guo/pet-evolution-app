@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { getStageName, type Pet } from "@pet-evolution/shared";
+import { getStageName, type Pet, PetAnimation } from "@pet-evolution/shared";
 import type { MessageItem, PetSceneActions, PetSceneProps } from "./types";
 import { SpinePet } from "./SpinePet";
 
@@ -10,7 +10,9 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [pendingChat, setPendingChat] = useState(false);
-  const [currentAnimation, setCurrentAnimation] = useState<string>("idle2");
+  const [currentAnimation, setCurrentAnimation] = useState<string>(
+    PetAnimation.IDLE2,
+  );
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const expProgress = useMemo(() => {
@@ -32,7 +34,9 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
     }
   };
 
-  const handleAction = async (action: keyof Pick<PetSceneActions, "feed" | "play" | "touch">) => {
+  const handleAction = async (
+    action: keyof Pick<PetSceneActions, "feed" | "play" | "touch">,
+  ) => {
     // 清除之前的 timeout
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
@@ -41,11 +45,11 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
 
     // 根据操作切换动画
     const animationMap: Record<string, string> = {
-      feed: "eat",
-      play: "play",
-      touch: "touch",
+      feed: PetAnimation.FEED,
+      play: PetAnimation.PLAY,
+      touch: PetAnimation.TOUCH,
     };
-    const anim = animationMap[action] || "idle2";
+    const anim = animationMap[action] || PetAnimation.IDLE2;
     setCurrentAnimation(anim);
 
     if (action === "feed") {
@@ -56,7 +60,7 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
 
     // 操作完成后，延迟恢复 idle 动画
     animationTimeoutRef.current = setTimeout(() => {
-      setCurrentAnimation("idle2");
+      setCurrentAnimation(PetAnimation.IDLE2);
       animationTimeoutRef.current = null;
     }, 2000);
   };
@@ -64,13 +68,17 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
   // 根据宠物状态自动切换动画
   useEffect(() => {
     // 如果当前没有特定操作动画，根据宠物状态选择
-    if (currentAnimation === "idle2" || currentAnimation === "idle") {
+    if (
+      currentAnimation === PetAnimation.IDLE2 ||
+      currentAnimation === PetAnimation.IDLE
+    ) {
       // 可以根据 pet 的状态选择不同的 idle 动画
       // 例如：如果饥饿值低，可以显示 "hungry" 动画
       if (pet.hunger < 30) {
-        setCurrentAnimation("hungry");
+        // 饥饿状态暂时使用 IDLE，或者后续添加 HUNGRY 枚举
+        setCurrentAnimation(PetAnimation.IDLE);
       } else {
-        setCurrentAnimation("idle2");
+        setCurrentAnimation(PetAnimation.IDLE2);
       }
     }
   }, [pet.hunger, currentAnimation]);
@@ -90,7 +98,11 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
         <div className="pet-display-area">
           <div className="pet-glow" />
           <div className="pet-container">
-            <SpinePet spineBaseUrl={spineBaseUrl} animation={currentAnimation} pet={pet} />
+            <SpinePet
+              spineBaseUrl={spineBaseUrl}
+              animation={currentAnimation}
+              pet={pet}
+            />
           </div>
           <div className="pet-shadow" />
         </div>
@@ -173,27 +185,39 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
           <button className="nav-button" onClick={() => setShowStatus(true)}>
             <span className="nav-icon">📊</span>
           </button>
-          <button className="nav-button logout-button" onClick={() => actions.logout()}>
+          <button
+            className="nav-button logout-button"
+            onClick={() => actions.logout()}
+          >
             <span className="nav-icon">🚪</span>
           </button>
         </div>
 
         <div className="action-sidebar">
-          <button className="action-button" onClick={() => handleAction("feed")}>
+          <button
+            className="action-button"
+            onClick={() => handleAction("feed")}
+          >
             <div className="action-icon-circle feed-button">
               <span className="action-icon">🍖</span>
             </div>
             <span className="action-label">喂食</span>
           </button>
 
-          <button className="action-button" onClick={() => handleAction("play")}>
+          <button
+            className="action-button"
+            onClick={() => handleAction("play")}
+          >
             <div className="action-icon-circle play-button">
               <span className="action-icon">🎮</span>
             </div>
             <span className="action-label">玩耍</span>
           </button>
 
-          <button className="action-button" onClick={() => handleAction("touch")}>
+          <button
+            className="action-button"
+            onClick={() => handleAction("touch")}
+          >
             <div className="action-icon-circle touch-button">
               <span className="action-icon">💕</span>
             </div>
@@ -203,7 +227,10 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
       </div>
 
       <div className="chat-input-container glass-surface">
-        <button className="mode-button" onClick={() => setIsVoiceMode(!isVoiceMode)}>
+        <button
+          className="mode-button"
+          onClick={() => setIsVoiceMode(!isVoiceMode)}
+        >
           <span className="mode-icon">{isVoiceMode ? "⌨️" : "🎤"}</span>
         </button>
 
@@ -240,7 +267,10 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">消息记录</div>
-              <button className="modal-close" onClick={() => setShowHistory(false)}>
+              <button
+                className="modal-close"
+                onClick={() => setShowHistory(false)}
+              >
                 ✕
               </button>
             </div>
@@ -250,7 +280,9 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
               ) : (
                 messages.map((m, idx) => (
                   <div key={idx} className={`msg-bubble ${m.sender}`}>
-                    <div className="msg-sender">{m.sender === "user" ? "我" : "宠物"}</div>
+                    <div className="msg-sender">
+                      {m.sender === "user" ? "我" : "宠物"}
+                    </div>
                     <div className="msg-text">{m.text}</div>
                   </div>
                 ))
@@ -265,13 +297,18 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">成长状态</div>
-              <button className="modal-close" onClick={() => setShowStatus(false)}>
+              <button
+                className="modal-close"
+                onClick={() => setShowStatus(false)}
+              >
                 ✕
               </button>
             </div>
             <div className="modal-content">
               <div style={{ padding: 12 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>📋 基本信息</div>
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                  📋 基本信息
+                </div>
                 <div>名字：{pet.name}</div>
                 <div>等级：Lv.{pet.level}</div>
                 <div>阶段：{getStageName(pet.stage, pet.subStage)}</div>
@@ -290,5 +327,3 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
     </div>
   );
 }
-
-

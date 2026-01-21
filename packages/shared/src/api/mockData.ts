@@ -1,4 +1,4 @@
-import { Pet, GrowthStage, UltimateForm, computeSpineResourceSuffix } from "../models/PetModel";
+import { Pet, GrowthStage, UltimateForm } from "../models/PetModel";
 
 /**
  * 模拟基础宠物数据
@@ -9,7 +9,7 @@ export const MOCK_PET: Pet = {
   name: "哈士奇(Mock)",
   stage: GrowthStage.CHILD,
   subStage: 2,
-  spineResourceSuffix: computeSpineResourceSuffix({ stage: GrowthStage.CHILD, subStage: 2, ultimateForm: null }),
+  spinePath: "/mon_earth_dragon_01_v38/mon_earth_dragon_01",
   level: 5,
   exp: 240,
   attributes: {
@@ -24,6 +24,11 @@ export const MOCK_PET: Pet = {
   health: 95,
   intimacy: 65,
   ultimateForm: null,
+
+  hasFood: true,
+  playCount: 5,
+  touchCount: 3,
+
   createdAt: Date.now() - 86400000 * 5, // 5天前
   lastInteractTime: Date.now(),
 };

@@ -12,11 +12,11 @@ export const petApi = {
   /**
    * 获取当前用户的宠物信息
    */
-  getPet: async (): Promise<Pet | null> => {
+  getPet: async (userId?: string): Promise<Pet | null> => {
     if (IS_MOCK_ENV) {
       await delay(800); // 模拟网络延迟
-      // 模拟 80% 几率有宠物，20% 几率没领养（测试用）
-      return Math.random() > 0.2 ? MOCK_PET : null;
+      // 返回默认 Mock 数据
+      return MOCK_PET;
     }
     return request<Pet | null>("/v1/pet");
   },

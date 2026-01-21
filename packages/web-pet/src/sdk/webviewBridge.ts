@@ -1,6 +1,5 @@
 import type { Pet } from "@pet-evolution/shared";
 import type { Environment } from "./config";
-import { buildSpineBaseUrl } from "./config";
 
 type NativeToWebMessage =
   | {
@@ -11,11 +10,6 @@ type NativeToWebMessage =
        * 如果不传，使用默认环境（dev）
        */
       environment?: Environment;
-      /**
-       * 资源后缀（可选）：如 "mon_earth_dragon_01_v38"
-       * 如果不传，不设置 spineBaseUrl
-       */
-      resourceSuffix?: string;
     }
   | { type: "CHAT_RESPONSE"; data: { reply: string; requestId?: string } }
   | { type: "ERROR"; data: { message: string; requestId?: string } };
@@ -55,25 +49,28 @@ export function createWebViewBridge(): WebViewBridge {
   const petListeners = new Set<(p: Pet) => void>();
   const spineBaseUrlListeners = new Set<(url: string | null) => void>();
 
-  const pendingChats = new Map<string, { resolve: (r: string) => void; reject: (e: unknown) => void }>();
+  const pendingChats = new Map<
+    string,
+    { resolve: (r: string) => void; reject: (e: unknown) => void }
+  >();
   let seq = 0;
 
   const post = (msg: WebToNativeMessage) => {
     const payload = JSON.stringify(msg);
-    
+
     // 优先检查 React Native WebView（原生平台）
     if ((window as any).ReactNativeWebView?.postMessage) {
       (window as any).ReactNativeWebView.postMessage(payload);
       return;
     }
-    
+
     // 检查是否在 iframe 中（Web 平台）
     if (window.parent && window.parent !== window) {
       // 在 iframe 中，向父窗口发送消息
       window.parent.postMessage(payload, "*");
       return;
     }
-    
+
     // 独立运行时（开发/调试）
     console.log("[bridge->native]", msg);
   };
@@ -87,9 +84,10 @@ export function createWebViewBridge(): WebViewBridge {
       pet = msg.data;
       petListeners.forEach((fn) => fn(msg.data));
 
-      // 处理环境标识和资源后缀
-      if (msg.environment && msg.resourceSuffix) {
-        const newSpineBaseUrl = buildSpineBaseUrl(msg.environment, msg.resourceSuffix);
+      // 直接从 Pet 数据中获取完整 Spine 路径
+      if (msg.data.spinePath) {
+        const newSpineBaseUrl = msg.data.spinePath;
+
         if (newSpineBaseUrl !== spineBaseUrl) {
           spineBaseUrl = newSpineBaseUrl;
           spineBaseUrlListeners.forEach((fn) => fn(spineBaseUrl));
@@ -128,8 +126,6 @@ export function createWebViewBridge(): WebViewBridge {
       document.addEventListener("message", listener as any);
       post({ type: "WEBVIEW_READY" });
       return () => {
-
-        
         window.removeEventListener("message", listener);
         document.removeEventListener("message", listener as any);
       };
@@ -165,5 +161,3 @@ export function createWebViewBridge(): WebViewBridge {
     logout: () => post({ type: "LOGOUT" }),
   };
 }
-
-

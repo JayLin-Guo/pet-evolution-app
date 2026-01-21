@@ -13,8 +13,8 @@ export interface EnvironmentConfig {
  */
 const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
   test: {
-    // 测试环境：使用你现在的服务器（对应 Nginx 的 /static/ 路径）
-    staticBaseUrl: "http://47.93.247.175:8080/static/",
+    // 测试环境：使用相对路径，以便支持本地代理 (开发时) 或同源部署
+    staticBaseUrl: "/static/",
   },
   product: {
     // 生产环境：可以换成 CDN 或生产服务器
@@ -39,15 +39,17 @@ export function getEnvironmentConfig(env: Environment): EnvironmentConfig {
  * @param resourceSuffix 资源后缀（如 "mon_earth_dragon_01_v38"）
  * @returns 完整的资源基础 URL（如 "http://47.93.247.175:8080/static/mon_earth_dragon_01_v38/"）
  */
-export function buildSpineBaseUrl(env: Environment, resourceSuffix: string): string {
+export function buildSpineBaseUrl(
+  env: Environment,
+  resourceSuffix: string,
+): string {
   const config = getEnvironmentConfig(env);
   // 确保 baseUrl 以 / 结尾，resourceSuffix 不以 / 开头
-  const base = config.staticBaseUrl.endsWith("/") 
-    ? config.staticBaseUrl 
+  const base = config.staticBaseUrl.endsWith("/")
+    ? config.staticBaseUrl
     : config.staticBaseUrl + "/";
-  const suffix = resourceSuffix.startsWith("/") 
-    ? resourceSuffix.slice(1) 
+  const suffix = resourceSuffix.startsWith("/")
+    ? resourceSuffix.slice(1)
     : resourceSuffix;
   return `${base}${suffix}/`;
 }
-

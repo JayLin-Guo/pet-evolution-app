@@ -4,7 +4,6 @@ import {
   GrowthStage,
   UltimateForm,
   createNewPet,
-  computeSpineResourceSuffix,
 } from "../models/PetModel";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { petApi } from "../api/pet";
@@ -47,14 +46,9 @@ export const usePet = () => {
 
   const loadPet = async (userId: string) => {
     try {
-      if (USE_MOCK) {
-        // 使用用户ID作为存储键的一部分，实现多账号隔离
-        const data = await AsyncStorage.getItem(`${STORAGE_KEY}_${userId}`);
-        setPet(data ? JSON.parse(data) : null);
-      } else {
-        const remotePet = await petApi.getPet();
-        setPet(remotePet);
-      }
+      // 统一通过 API 获取数据（内部根据环境 mock 或真实请求）
+      const remotePet = await petApi.getPet(userId);
+      setPet(remotePet);
     } catch (error) {
       console.error("加载宠物数据失败:", error);
     }
@@ -125,8 +119,6 @@ export const usePet = () => {
     },
     [pet, currentUser],
   );
-
-
 
   // 喂食
   const feed = useCallback(
@@ -234,12 +226,8 @@ export const usePet = () => {
     if (currentPet.stage === GrowthStage.PEAK && !currentPet.ultimateForm) {
       determineUltimateForm(currentPet);
     }
-    // 阶段/形态变化后，更新资源后缀（生产建议由服务端返回，这里为 mock/过渡兜底）
-    currentPet.spineResourceSuffix = computeSpineResourceSuffix({
-      stage: currentPet.stage,
-      subStage: currentPet.subStage,
-      ultimateForm: currentPet.ultimateForm,
-    });
+    // 阶段/形态变化后，更新资源路径
+    // currentPet.spinePath = ... (TODO: 生产环境应由服务端返回最新路径)
   };
 
   /**
@@ -264,8 +252,6 @@ export const usePet = () => {
       currentPet.ultimateForm = UltimateForm.ANGEL;
     else currentPet.ultimateForm = UltimateForm.QILIN;
   };
-
-
 
   return {
     pet,

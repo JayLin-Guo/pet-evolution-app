@@ -1,5 +1,17 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import type { WebViewMessageEvent } from "react-native-webview";
 import { WebView } from "react-native-webview";
 import type { Pet } from "@pet-evolution/shared";
@@ -20,10 +32,6 @@ type NativeToWebMessage =
        * 环境标识（可选）：test/product/dev
        */
       environment?: "test" | "product" | "dev";
-      /**
-       * 资源后缀（可选）：如 "mon_earth_dragon_01_v38"
-       */
-      resourceSuffix?: string;
     }
   | { type: "CHAT_RESPONSE"; data: { reply: string; requestId?: string } }
   | { type: "ERROR"; data: { message: string; requestId?: string } };
@@ -46,11 +54,6 @@ interface PetWebViewProps {
    * 用于 web-pet 内部根据环境选择对应的静态资源域名前缀
    */
   environment?: "test" | "product" | "dev";
-  /**
-   * 资源后缀（可选）：如 "mon_earth_dragon_01_v38"
-   * web-pet 会根据环境配置 + 资源后缀拼接完整的 Spine 资源 URL
-   */
-  resourceSuffix?: string;
 }
 
 function safeJsonParse(input: string): unknown {
@@ -70,7 +73,6 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
   onLogout,
   webUrl,
   environment,
-  resourceSuffix,
 }) => {
   const webRef = useRef<WebView>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -81,36 +83,44 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
 
   const source = useMemo(() => ({ uri: webUrl }), [webUrl]);
 
-  const postToWeb = useCallback(
-    (msg: NativeToWebMessage) => {
-      const payload = JSON.stringify(msg);
-      if (Platform.OS === "web") {
-        // Web 平台：通过 iframe postMessage
-        if (iframeRef.current?.contentWindow) {
-          iframeRef.current.contentWindow.postMessage(payload, "*");
-        }
-      } else {
-        // 原生平台：通过 react-native-webview
-        webRef.current?.postMessage(payload);
+  /**
+   * 发送消息给 Web 侧
+   * Native -> Web
+   */
+  const postToWeb = useCallback((msg: NativeToWebMessage) => {
+    const payload = JSON.stringify(msg);
+    if (Platform.OS === "web") {
+      // Web 平台：通过 iframe postMessage 发送给内部的网页
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(payload, "*");
       }
-    },
-    []
-  );
+    } else {
+      // 原生平台：通过 react-native-webview 的 postMessage 发送
+      webRef.current?.postMessage(payload);
+    }
+  }, []);
 
-  // WebView/iframe ready 后，推送一次全量 pet；后续 pet 变化也推送（当 ready）
+  // 监听 pet 数据或环境变化，自动同步给 Web
+  // 仅当 WebView 准备就绪 (WEBVIEW_READY) 后才发送
   useEffect(() => {
     if (!isReady) return;
     postToWeb({
       type: "UPDATE_PET",
       data: pet,
       environment,
-      resourceSuffix,
     });
-  }, [isReady, pet, postToWeb, environment, resourceSuffix]);
+  }, [isReady, pet, postToWeb, environment]);
 
+  /**
+   * 接收来自 Web 侧 (iframe/WebView) 的消息
+   * - Web -> Native: 通过 window.parent.postMessage (Web) 或 window.ReactNativeWebView.postMessage (Native) 发送
+   * - Native -> Web: 使用 postToWeb 发送
+   */
   const handleMessage = useCallback(
     async (event: WebViewMessageEvent | MessageEvent) => {
-      // 统一处理：Web 平台用 MessageEvent，原生平台用 WebViewMessageEvent
+      // 1. 解析消息内容
+      // Web 平台：event.data 直接就是消息内容
+      // Native 平台：event.nativeEvent.data 是字符串化的消息
       const raw =
         Platform.OS === "web"
           ? (event as MessageEvent).data
@@ -122,37 +132,47 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
       const msg = parsed as WebToNativeMessage;
 
       try {
+        // 2. 根据消息类型处理业务逻辑
         switch (msg.type) {
           case "WEBVIEW_READY": {
+            // Web 侧加载完成，准备接收数据
             setIsReady(true);
             setLoadError(null);
             setIsLoading(false);
-            // 立即同步一次 pet
+
+            // 立即同步一次当前宠物数据给 Web
             postToWeb({
               type: "UPDATE_PET",
               data: pet,
               environment,
-              resourceSuffix,
             });
             return;
           }
           case "FEED": {
+            // Web 请求喂食 -> 调用 Native 喂食逻辑
             await onFeed(msg.data?.foodValue);
             return;
           }
           case "PLAY": {
+            // Web 请求玩耍 -> 调用 Native 玩耍逻辑
             await onPlay();
             return;
           }
           case "TOUCH": {
+            // Web 请求抚摸 -> 调用 Native 抚摸逻辑
             await onTouch();
             return;
           }
           case "CHAT": {
+            // Web 发送对话 -> Native 调用 AI 接口 -> 返回结果给 Web
             const data = msg.data;
             const text = typeof data === "string" ? data : data.text;
-            const requestId = typeof data === "string" ? undefined : data.requestId;
+            const requestId =
+              typeof data === "string" ? undefined : data.requestId;
+
             const reply = await onChat(text);
+
+            // 将 AI 回复发送回 Web
             postToWeb({ type: "CHAT_RESPONSE", data: { reply, requestId } });
             return;
           }
@@ -168,7 +188,7 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
         postToWeb({ type: "ERROR", data: { message } });
       }
     },
-    [onFeed, onPlay, onTouch, onChat, onLogout, pet, postToWeb, environment, resourceSuffix],
+    [onFeed, onPlay, onTouch, onChat, onLogout, pet, postToWeb, environment],
   );
 
   // Web 平台：监听 window message（来自 iframe）
@@ -178,14 +198,25 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
     const handleWindowMessage = (e: MessageEvent) => {
       // 开发期：允许所有消息（因为可能跨域）
       // 生产环境：应该检查 e.origin 是否匹配 webUrl
-      console.log('[PetWebView] Received message from iframe:', e.data, 'origin:', e.origin);
-      
+      console.log(
+        "[PetWebView] Received message from iframe:",
+        e.data,
+        "origin:",
+        e.origin,
+      );
+
       // 尝试解析消息
       const parsed = safeJsonParse(e.data);
-      if (parsed && typeof parsed === "object" && (parsed as any).type === "WEBVIEW_READY") {
-        console.log('[PetWebView] WEBVIEW_READY received, setting isReady=true');
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        (parsed as any).type === "WEBVIEW_READY"
+      ) {
+        console.log(
+          "[PetWebView] WEBVIEW_READY received, setting isReady=true",
+        );
       }
-      
+
       handleMessage(e);
     };
 
@@ -203,40 +234,46 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
     const timer = setTimeout(() => {
       // 尝试多种方式获取 View 的 DOM 节点
       let containerNode: HTMLElement | null = null;
-      
+
       if (containerRef.current) {
         // 方式1: 通过 _nativeNode
         containerNode = (containerRef.current as any)?._nativeNode;
         // 方式2: 通过 _internalFiberInstanceHandleDEV 或直接查找
         if (!containerNode) {
-          const viewElement = document.querySelector('[data-testid="pet-webview-container"]');
+          const viewElement = document.querySelector(
+            '[data-testid="pet-webview-container"]',
+          );
           if (viewElement) containerNode = viewElement as HTMLElement;
         }
         // 方式3: 通过 ref 的 current 属性查找最近的 div
-        if (!containerNode && typeof document !== 'undefined') {
+        if (!containerNode && typeof document !== "undefined") {
           // React Native Web 通常会把 View 渲染成 div，我们通过查找包含特定样式的元素
-          const allDivs = Array.from(document.querySelectorAll('div'));
-          containerNode = allDivs.find(div => {
-            const style = window.getComputedStyle(div);
-            return style.position === 'relative' || div.style.position === 'relative';
-          }) as HTMLElement || null;
+          const allDivs = Array.from(document.querySelectorAll("div"));
+          containerNode =
+            (allDivs.find((div) => {
+              const style = window.getComputedStyle(div);
+              return (
+                style.position === "relative" ||
+                div.style.position === "relative"
+              );
+            }) as HTMLElement) || null;
         }
       }
 
       if (!containerNode) {
-        console.warn('PetWebView: 无法找到容器节点，尝试创建新容器');
+        console.warn("PetWebView: 无法找到容器节点，尝试创建新容器");
         // 创建一个新的容器
-        const newContainer = document.createElement('div');
-        newContainer.id = 'pet-webview-iframe-container';
-        newContainer.style.width = '100%';
-        newContainer.style.height = '100%';
-        newContainer.style.position = 'relative';
+        const newContainer = document.createElement("div");
+        newContainer.id = "pet-webview-iframe-container";
+        newContainer.style.width = "100%";
+        newContainer.style.height = "100%";
+        newContainer.style.position = "relative";
         document.body.appendChild(newContainer);
         containerNode = newContainer;
       }
 
       // 如果已经存在 iframe，先移除
-      const existingIframe = containerNode.querySelector('iframe');
+      const existingIframe = containerNode.querySelector("iframe");
       if (existingIframe) {
         containerNode.removeChild(existingIframe);
       }
@@ -251,13 +288,13 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
       iframe.setAttribute("allow", "clipboard-read; clipboard-write");
 
       iframe.onload = () => {
-        console.log('PetWebView: iframe loaded, waiting for WEBVIEW_READY');
+        console.log("PetWebView: iframe loaded, waiting for WEBVIEW_READY");
         // iframe 加载完成后，等待 web-pet 发送 WEBVIEW_READY
         // 注意：isLoading 会在收到 WEBVIEW_READY 时设置为 false
       };
 
       iframe.onerror = () => {
-        console.error('PetWebView: iframe load error');
+        console.error("PetWebView: iframe load error");
         setLoadError("iframe 加载失败");
         setIsLoading(false);
       };
@@ -277,8 +314,8 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
   // Web 平台：使用 iframe
   if (Platform.OS === "web") {
     return (
-      <View 
-        style={styles.container} 
+      <View
+        style={styles.container}
         ref={containerRef}
         // @ts-ignore - React Native Web 支持 data-testid
         data-testid="pet-webview-container"
@@ -353,9 +390,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "rgba(255, 59, 48, 0.9)",
   },
-  errorTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginBottom: 6 },
+  errorTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
   errorText: { color: "#fff", fontSize: 12, marginBottom: 6 },
   errorHint: { color: "rgba(255,255,255,0.9)", fontSize: 12 },
 });
-
-

@@ -1,4 +1,4 @@
-import './App.css';
+import "./App.css";
 import { useEffect, useMemo, useState } from "react";
 import { createWebViewBridge, PetScene, type PetSceneActions } from "./sdk";
 import type { Pet } from "@pet-evolution/shared";
@@ -10,8 +10,11 @@ function App() {
 
   useEffect(() => {
     const disposeBridge = bridge.connect();
+
     const disposePet = bridge.onPetChange(setPet);
+
     const disposeSpineUrl = bridge.onSpineBaseUrlChange(setSpineBaseUrl);
+
     return () => {
       disposePet();
       disposeSpineUrl();
@@ -38,8 +41,6 @@ function App() {
       </div>
     );
   }
-
-  console.log(spineBaseUrl, 'spineBaseUrl')
 
   return <PetScene pet={pet} actions={actions} spineBaseUrl={spineBaseUrl} />;
 }
