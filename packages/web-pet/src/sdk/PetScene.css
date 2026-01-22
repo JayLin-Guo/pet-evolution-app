@@ -1,0 +1,506 @@
+/* ==================== 背景和装饰 ==================== */
+.scene-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  /* Original purple/blue gradient matching the app's initial theme */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-size: cover;
+}
+
+.gradient-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+}
+
+.background-decorations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-star {
+  position: absolute;
+  font-size: 24px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.star-1 {
+  top: 10%;
+  left: 15%;
+  animation-delay: 0s;
+}
+
+.star-2 {
+  top: 20%;
+  right: 20%;
+  animation-delay: 0.5s;
+}
+
+.star-3 {
+  bottom: 30%;
+  left: 10%;
+  animation-delay: 1s;
+}
+
+.star-4 {
+  bottom: 15%;
+  right: 15%;
+  animation-delay: 1.5s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* ==================== 主内容区域 ==================== */
+.main-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+/* ==================== 宠物显示区域 ==================== */
+.pet-display-area {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pet-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(138, 43, 226, 0.3) 0%, transparent 70%);
+  filter: blur(30px);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.pet-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  z-index: 2;
+}
+
+.pet-shadow {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 20px;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(8px);
+}
+
+/* ==================== 左侧状态栏 ==================== */
+/* ==================== 左侧状态栏 ==================== */
+.status-sidebar {
+  position: absolute;
+  left: 20px;
+  top: 20%;
+  width: 70px;
+  z-index: 100;
+  animation: slideInLeft 0.8s ease-out;
+}
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 8px;
+  width: 100%;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.level-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.2));
+  border-radius: 16px;
+  border: 2px solid rgba(255, 215, 0, 0.4);
+}
+
+.level-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 1px;
+}
+
+.level-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+}
+
+.status-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.status-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.status-icon {
+  font-size: 14px;
+}
+
+.status-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.status-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ==================== 顶部导航栏 ==================== */
+.top-navbar {
+  position: absolute;
+  top: 50px;
+  right: 20px;
+  z-index: 100;
+  animation: slideInRight 0.8s ease-out;
+}
+
+.nav-list {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px; /* Add horizontal padding to frame the buttons */
+  height: 100%;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.nav-menu-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.nav-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  z-index: 99;
+  animation: slideInTop 0.2s ease-out;
+}
+
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.nav-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%; /* distinct circular shape */
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(255, 255, 255, 0.85);
+  position: relative;
+  overflow: hidden;
+}
+
+
+
+.nav-button:active {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-icon {
+  font-size: 22px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.logout-button:hover {
+  background: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
+}
+
+/* ==================== 右侧操作按钮 ==================== */
+.action-sidebar {
+  position: absolute;
+  right: 20px;
+  bottom: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: slideInRight 0.8s ease-out 0.2s backwards;
+}
+
+.action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease;
+}
+
+.action-button:hover {
+  transform: scale(1.05);
+}
+
+.action-button:active {
+  transform: scale(0.95);
+}
+
+.action-icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.feed-button {
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.3), rgba(255, 122, 0, 0.3));
+}
+
+.play-button {
+  background: linear-gradient(135deg, rgba(255, 45, 85, 0.3), rgba(255, 23, 68, 0.3));
+}
+
+.touch-button {
+  background: linear-gradient(135deg, rgba(175, 82, 222, 0.3), rgba(155, 62, 202, 0.3));
+}
+
+.action-icon {
+  font-size: 28px;
+}
+
+.action-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.5px;
+}
+
+/* ==================== 底部输入栏 ==================== */
+.chat-input-container {
+  position: absolute;
+  bottom: 30px;
+  left: 16px;
+  right: 16px;
+  z-index: 100;
+  animation: slideInBottom 0.8s ease-out 0.4s backwards;
+}
+
+.chat-content-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes slideInBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mode-button,
+.send-button,
+.plus-button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mode-button:hover,
+.send-button:hover,
+.plus-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.mode-button:active,
+.send-button:active,
+.plus-button:active {
+  transform: scale(0.95);
+}
+
+.voice-button {
+  flex: 1;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(118, 75, 162, 0.8), rgba(102, 126, 234, 0.8));
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.voice-button:hover {
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.4), rgba(10, 132, 255, 0.4));
+  transform: scale(1.02);
+}
+
+.text-input-wrapper {
+  flex: 1;
+}
+
+.text-input {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0 16px;
+  font-size: 15px;
+  color: white;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.text-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.text-input:focus {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.send-button {
+  background: linear-gradient(135deg, rgba(118, 75, 162, 0.8), rgba(102, 126, 234, 0.8));
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  width: auto;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.send-button:hover {
+  background: linear-gradient(135deg, rgba(142, 106, 192, 0.9), rgba(137, 160, 240, 0.9));
+  transform: scale(1.02);
+}

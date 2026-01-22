@@ -1,7 +1,13 @@
 import { useMemo, useState, useEffect, useRef } from "react";
+import { Icon } from "@iconify/react";
 import { getStageName, type Pet, PetAnimation } from "@pet-evolution/shared";
 import type { MessageItem, PetSceneActions, PetSceneProps } from "./types";
 import { SpinePet } from "./SpinePet";
+import Aurora from "../components/Aurora";
+import GlassSurface from "../components/GlassSurface/GlassSurface";
+import ShinyText from "../components/ShinyText";
+import ClickSpark from "../components/ClickSpark";
+import "./PetScene.css";
 
 export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
   const [message, setMessage] = useState("");
@@ -9,6 +15,7 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [pendingChat, setPendingChat] = useState(false);
   const [currentAnimation, setCurrentAnimation] = useState<string>(
     PetAnimation.IDLE2,
@@ -85,7 +92,7 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
 
   return (
     <div className="pet-main-container pet-web-container">
-      <div className="gradient-background" />
+      <div className="scene-background" />
 
       <div className="background-decorations">
         <div className="floating-star star-1">✨</div>
@@ -107,159 +114,250 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
           <div className="pet-shadow" />
         </div>
 
-        <div className="status-sidebar glass-surface">
-          <div className="level-badge">
-            <div className="level-label">LV</div>
-            <div className="level-value">{pet.level}</div>
-          </div>
+        <div className="status-sidebar">
+          <GlassSurface
+            width="100%"
+            height="100%"
+            borderRadius={24}
+            backgroundOpacity={0.2}
+            blur={20}
+            displace={2}
+            distortionScale={-200}
+            redOffset={0}
+            greenOffset={15}
+            blueOffset={30}
+          >
+            <div className="status-list">
+              <div className="level-badge">
+                <div className="level-label">LV</div>
+                <div className="level-value">
+                  <ShinyText
+                    text={pet.level.toString()}
+                    speed={3}
+                    color="#ffffff"
+                    shineColor="#FFD700"
+                  />
+                </div>
+              </div>
 
-          <div className="status-item">
-            <div className="status-label">
-              <span className="status-icon">✨</span>
-              <span>经验</span>
-            </div>
-            <div className="status-bar">
-              <div
-                className="status-bar-fill"
-                style={{
-                  width: `${expProgress}%`,
-                  background: "linear-gradient(90deg, #FFD700, #FFA500)",
-                }}
-              />
-            </div>
-          </div>
+              <div className="status-item">
+                <div className="status-label">
+                  <span className="status-icon">✨</span>
+                  <span>经验</span>
+                </div>
+                <div className="status-bar">
+                  <div
+                    className="status-bar-fill"
+                    style={{
+                      width: `${expProgress}%`,
+                      background: "linear-gradient(90deg, #FFD700, #FFA500)",
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div className="status-item">
-            <div className="status-label">
-              <span className="status-icon">🍖</span>
-              <span>饥饿</span>
-            </div>
-            <div className="status-bar">
-              <div
-                className="status-bar-fill"
-                style={{
-                  width: `${pet.hunger}%`,
-                  background: "linear-gradient(90deg, #FF9500, #FF7A00)",
-                }}
-              />
-            </div>
-          </div>
+              <div className="status-item">
+                <div className="status-label">
+                  <span className="status-icon">🍖</span>
+                  <span>饥饿</span>
+                </div>
+                <div className="status-bar">
+                  <div
+                    className="status-bar-fill"
+                    style={{
+                      width: `${pet.hunger}%`,
+                      background: "linear-gradient(90deg, #FF9500, #FF7A00)",
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div className="status-item">
-            <div className="status-label">
-              <span className="status-icon">🎮</span>
-              <span>快乐</span>
-            </div>
-            <div className="status-bar">
-              <div
-                className="status-bar-fill"
-                style={{
-                  width: `${pet.happiness}%`,
-                  background: "linear-gradient(90deg, #FF2D55, #FF1744)",
-                }}
-              />
-            </div>
-          </div>
+              <div className="status-item">
+                <div className="status-label">
+                  <span className="status-icon">🎮</span>
+                  <span>快乐</span>
+                </div>
+                <div className="status-bar">
+                  <div
+                    className="status-bar-fill"
+                    style={{
+                      width: `${pet.happiness}%`,
+                      background: "linear-gradient(90deg, #FF2D55, #FF1744)",
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div className="status-item">
-            <div className="status-label">
-              <span className="status-icon">❤️</span>
-              <span>健康</span>
+              <div className="status-item">
+                <div className="status-label">
+                  <span className="status-icon">❤️</span>
+                  <span>健康</span>
+                </div>
+                <div className="status-bar">
+                  <div
+                    className="status-bar-fill"
+                    style={{
+                      width: `${pet.health}%`,
+                      background: "linear-gradient(90deg, #34C759, #30D158)",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="status-bar">
-              <div
-                className="status-bar-fill"
-                style={{
-                  width: `${pet.health}%`,
-                  background: "linear-gradient(90deg, #34C759, #30D158)",
-                }}
-              />
-            </div>
-          </div>
+          </GlassSurface>
         </div>
 
-        <div className="top-navbar glass-surface">
-          <button className="nav-button" onClick={() => setShowHistory(true)}>
-            <span className="nav-icon">💬</span>
-          </button>
-          <button className="nav-button" onClick={() => setShowStatus(true)}>
-            <span className="nav-icon">📊</span>
-          </button>
-          <button
-            className="nav-button logout-button"
-            onClick={() => actions.logout()}
-          >
-            <span className="nav-icon">🚪</span>
-          </button>
+        <div className="top-navbar">
+          <div className="nav-menu-container">
+            <div className="nav-list">
+              <button
+                className={`nav-button menu-toggle ${showMenu ? "active" : ""}`}
+                onClick={() => setShowMenu(!showMenu)}
+              >
+                <Icon
+                  icon={showMenu ? "lucide:x" : "lucide:menu"}
+                  className="nav-icon"
+                />
+              </button>
+            </div>
+
+            {showMenu && (
+              <div className="nav-dropdown">
+                <GlassSurface
+                  width="auto"
+                  height="auto"
+                  borderRadius={20}
+                  backgroundOpacity={0.2}
+                  blur={20}
+                  displace={2}
+                  distortionScale={-200}
+                  redOffset={0}
+                  greenOffset={15}
+                  blueOffset={30}
+                >
+                  <div className="dropdown-list">
+                    <button
+                      className="nav-button"
+                      onClick={() => {
+                        setShowHistory(true);
+                        setShowMenu(false);
+                      }}
+                      title="消息记录"
+                    >
+                      <Icon icon="lucide:message-circle" className="nav-icon" />
+                    </button>
+                    <button
+                      className="nav-button"
+                      onClick={() => {
+                        setShowStatus(true);
+                        setShowMenu(false);
+                      }}
+                      title="成长状态"
+                    >
+                      <Icon icon="lucide:bar-chart-2" className="nav-icon" />
+                    </button>
+                    <button
+                      className="nav-button logout-button"
+                      onClick={() => {
+                        actions.logout();
+                        setShowMenu(false);
+                      }}
+                      title="退出登录"
+                    >
+                      <Icon icon="lucide:log-out" className="nav-icon" />
+                    </button>
+                  </div>
+                </GlassSurface>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="action-sidebar">
-          <button
-            className="action-button"
-            onClick={() => handleAction("feed")}
-          >
-            <div className="action-icon-circle feed-button">
-              <span className="action-icon">🍖</span>
-            </div>
-            <span className="action-label">喂食</span>
-          </button>
+          <ClickSpark sparkColor="#FF9500" sparkCount={12} sparkRadius={30}>
+            <button
+              className="action-button"
+              onClick={() => handleAction("feed")}
+            >
+              <div className="action-icon-circle feed-button">
+                <span className="action-icon">🍖</span>
+              </div>
+              <span className="action-label">喂食</span>
+            </button>
+          </ClickSpark>
 
-          <button
-            className="action-button"
-            onClick={() => handleAction("play")}
-          >
-            <div className="action-icon-circle play-button">
-              <span className="action-icon">🎮</span>
-            </div>
-            <span className="action-label">玩耍</span>
-          </button>
+          <ClickSpark sparkColor="#FF2D55" sparkCount={12} sparkRadius={30}>
+            <button
+              className="action-button"
+              onClick={() => handleAction("play")}
+            >
+              <div className="action-icon-circle play-button">
+                <span className="action-icon">🎮</span>
+              </div>
+              <span className="action-label">玩耍</span>
+            </button>
+          </ClickSpark>
 
-          <button
-            className="action-button"
-            onClick={() => handleAction("touch")}
-          >
-            <div className="action-icon-circle touch-button">
-              <span className="action-icon">💕</span>
-            </div>
-            <span className="action-label">抚摸</span>
-          </button>
+          <ClickSpark sparkColor="#AF52DE" sparkCount={12} sparkRadius={30}>
+            <button
+              className="action-button"
+              onClick={() => handleAction("touch")}
+            >
+              <div className="action-icon-circle touch-button">
+                <span className="action-icon">💕</span>
+              </div>
+              <span className="action-label">抚摸</span>
+            </button>
+          </ClickSpark>
         </div>
       </div>
 
-      <div className="chat-input-container glass-surface">
-        <button
-          className="mode-button"
-          onClick={() => setIsVoiceMode(!isVoiceMode)}
+      <div className="chat-input-container">
+        <GlassSurface
+          width="100%"
+          height="auto"
+          borderRadius={24}
+          backgroundOpacity={0.1}
+          blur={15}
+          displace={5}
+          distortionScale={-400}
         >
-          <span className="mode-icon">{isVoiceMode ? "⌨️" : "🎤"}</span>
-        </button>
+          <div className="chat-content-inner">
+            <button
+              className="mode-button"
+              onClick={() => setIsVoiceMode(!isVoiceMode)}
+            >
+              <span className="mode-icon">{isVoiceMode ? "⌨️" : "🎤"}</span>
+            </button>
 
-        {isVoiceMode ? (
-          <button className="voice-button">
-            <span>按住 说话</span>
-          </button>
-        ) : (
-          <div className="text-input-wrapper">
-            <input
-              type="text"
-              className="text-input"
-              placeholder="和宠物说点什么..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            />
+            {isVoiceMode ? (
+              <button className="voice-button">
+                <span>按住 说话</span>
+              </button>
+            ) : (
+              <div className="text-input-wrapper">
+                <input
+                  type="text"
+                  className="text-input"
+                  placeholder="和宠物说点什么..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                />
+              </div>
+            )}
+
+            {!isVoiceMode && message.trim() ? (
+              <button className="send-button" onClick={handleSendMessage}>
+                <span>{pendingChat ? "发送中..." : "发送"}</span>
+              </button>
+            ) : (
+              <button className="plus-button">
+                <span className="plus-icon">➕</span>
+              </button>
+            )}
           </div>
-        )}
-
-        {!isVoiceMode && message.trim() ? (
-          <button className="send-button" onClick={handleSendMessage}>
-            <span>{pendingChat ? "发送中..." : "发送"}</span>
-          </button>
-        ) : (
-          <button className="plus-button">
-            <span className="plus-icon">➕</span>
-          </button>
-        )}
+        </GlassSurface>
       </div>
 
       {showHistory ? (
