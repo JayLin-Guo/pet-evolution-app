@@ -362,7 +362,7 @@ export function PetScene({
               className="mode-button"
               onClick={() => setIsVoiceMode(!isVoiceMode)}
             >
-              <span className="mode-icon">{isVoiceMode ? "⌨️" : "🎤"}</span>
+           <Icon icon="mynaui:contactless-solid" width="24" height="24" />
             </button>
 
             {isVoiceMode ? (
@@ -382,13 +382,9 @@ export function PetScene({
               </div>
             )}
 
-            {!isVoiceMode && message.trim() ? (
+            {!isVoiceMode && message.trim() && (
               <button className="send-button" onClick={handleSendMessage}>
                 <span>{pendingChat ? "发送中..." : "发送"}</span>
-              </button>
-            ) : (
-              <button className="plus-button">
-                <span className="plus-icon">➕</span>
               </button>
             )}
           </div>
