@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "server": "pnpm --filter server start:dev",
+    "server:start": "pnpm --filter server start",
+    "server:build": "pnpm --filter server build",
+    "server:prod": "pnpm --filter server start:prod",
     "mobile": "pnpm --filter @pet-evolution/mobile start",
     "mobile:android": "pnpm --filter @pet-evolution/mobile android",
     "mobile:ios": "pnpm --filter @pet-evolution/mobile ios",
@@ -13,9 +17,11 @@
     "web-mobile-pet:build": "pnpm --filter @pet-evolution/mobile export:web",
     "web-pet:preview": "pnpm --filter @pet-evolution/web-pet preview",
     "dev": "pnpm web-pet",
+    "dev:all": "pnpm -r --parallel run start:dev",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist .expo packages/mobile/.expo",
     "clean:mobile": "rm -rf packages/mobile/node_modules .expo packages/mobile/.expo",
-    "clean:web-pet": "rm -rf packages/web-pet/node_modules packages/web-pet/dist"
+    "clean:web-pet": "rm -rf packages/web-pet/node_modules packages/web-pet/dist",
+    "clean:server": "rm -rf packages/server/node_modules packages/server/dist"
   },
   "devDependencies": {
     "typescript": "~5.3.3"

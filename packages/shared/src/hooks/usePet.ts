@@ -7,10 +7,11 @@ import {
 } from "../models/PetModel";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { petApi } from "../api/pet";
+import { petEggApi } from "../api/pet-egg";
 import { authApi } from "../api/auth";
 
 const STORAGE_KEY = "@pet_data";
-const USE_MOCK = true;
+const USE_MOCK = false; // 改为 false，使用真实 API
 
 export const usePet = () => {
   const [pet, setPet] = useState<Pet | null>(null);
@@ -26,8 +27,11 @@ export const usePet = () => {
       setLoading(true);
       const user = await authApi.getCurrentUser();
       if (user) {
-        setCurrentUser(user);
-        await loadPet(user.userId);
+        setCurrentUser({
+          userId: user.userId.toString(),
+          phoneNumber: user.phone,
+        });
+        await loadPet();
       }
       setLoading(false);
     };
@@ -44,10 +48,10 @@ export const usePet = () => {
     return () => clearInterval(interval);
   }, [pet, currentUser]);
 
-  const loadPet = async (userId: string) => {
+  const loadPet = async () => {
     try {
       // 统一通过 API 获取数据（内部根据环境 mock 或真实请求）
-      const remotePet = await petApi.getPet(userId);
+      const remotePet = await petApi.getPet();
       setPet(remotePet);
     } catch (error) {
       console.error("加载宠物数据失败:", error);
@@ -59,9 +63,12 @@ export const usePet = () => {
    */
   const login = async (phone: string) => {
     const user = await authApi.login(phone);
-    const userData = { userId: user.userId, phoneNumber: phone };
+    const userData = {
+      userId: user.userId.toString(),
+      phoneNumber: phone,
+    };
     setCurrentUser(userData);
-    await loadPet(user.userId);
+    await loadPet();
   };
 
   /**
@@ -87,9 +94,11 @@ export const usePet = () => {
           JSON.stringify(dataToSync),
         );
       } else {
-        // 增量或全量同步到服务器
-        const updated = await petApi.updateStatus(dataToSync);
-        setPet(updated);
+        // 重新从服务器获取最新数据
+        const updated = await petApi.getPet();
+        if (updated) {
+          setPet(updated);
+        }
       }
     } catch (error) {
       console.error("同步宠物数据失败:", error);
@@ -97,6 +106,7 @@ export const usePet = () => {
   };
 
   // 领养宠物
+  // 注意：这个函数现在只接收 name 参数，内部会自动先抽取宠物蛋
   const adoptPet = useCallback(
     async (name: string) => {
       if (!currentUser) return;
@@ -108,28 +118,48 @@ export const usePet = () => {
           await syncPetWithServer(newPet);
           setPet(newPet);
         } else {
-          const remotePet = await petApi.adoptPet(name);
+          // 1. 先抽取宠物蛋
+          console.log("开始抽取宠物蛋...");
+          const drawResult = await petEggApi.draw();
+          const petEggId = drawResult.petEgg.id;
+          console.log("抽到宠物蛋:", drawResult.petEgg.name, "ID:", petEggId);
+
+          // 2. 使用抽取到的宠物蛋领养宠物
+          console.log("开始领养宠物，名字:", name);
+          const remotePet = await petApi.adoptPet(petEggId, name);
           setPet(remotePet);
+          console.log("领养成功:", remotePet.name);
         }
       } catch (error) {
         console.error("领养失败:", error);
+        throw error; // 抛出错误，让调用方可以处理
       } finally {
         setLoading(false);
       }
     },
-    [pet, currentUser],
+    [currentUser],
   );
 
   // 喂食
   const feed = useCallback(
     async (foodValue: number = 20) => {
       if (!pet) return;
+      
+      // 前端检查：如果饥饿值已满，直接返回消息，不调用API
+      if (pet.hunger >= 100) {
+        return "宠物已经吃饱了";
+      }
+      
       try {
-        const updatedPet = await petApi.feedPet(foodValue);
-        setPet(updatedPet);
-        await syncPetWithServer(updatedPet);
+        const petId = parseInt(pet.id);
+        const result = await petApi.feedPet(petId);
+        setPet(result.pet);
+        await syncPetWithServer(result.pet);
+        // 返回消息，供调用方显示
+        return result.message;
       } catch (e) {
         console.error("喂食同步失败:", e);
+        return undefined;
       }
     },
     [pet],
@@ -138,12 +168,22 @@ export const usePet = () => {
   // 玩耍
   const play = useCallback(async () => {
     if (!pet) return;
+    
+    // 前端检查：如果快乐值已满，直接返回消息，不调用API
+    if (pet.happiness >= 100) {
+      return "宠物已经很开心了";
+    }
+    
     try {
-      const updatedPet = await petApi.playWithPet();
-      setPet(updatedPet);
-      await syncPetWithServer(updatedPet);
+        const petId = parseInt(pet.id);
+        const result = await petApi.playWithPet(petId);
+        setPet(result.pet);
+        await syncPetWithServer(result.pet);
+        // 返回消息，供调用方显示
+        return result.message;
     } catch (e) {
       console.error("玩耍同步失败:", e);
+      return undefined;
     }
   }, [pet]);
 
@@ -153,7 +193,8 @@ export const usePet = () => {
       if (!pet) return "我还没出生呢...";
 
       try {
-        const { reply, statusUpdate } = await petApi.chatWithPet(message);
+        const petId = parseInt(pet.id);
+        const { reply, statusUpdate } = await petApi.chatWithPet(petId, message);
 
         // 以 API 返回的 statusUpdate 为主更新数据
         if (statusUpdate) {
@@ -178,12 +219,22 @@ export const usePet = () => {
   // 抚摸
   const pet_touch = useCallback(async () => {
     if (!pet) return;
+    
+    // 前端检查：如果健康值已满，直接返回消息，不调用API
+    if (pet.health >= 100) {
+      return "宠物已经很健康了";
+    }
+    
     try {
-      const updatedPet = await petApi.touchPet();
-      setPet(updatedPet);
-      await syncPetWithServer(updatedPet);
+        const petId = parseInt(pet.id);
+        const result = await petApi.touchPet(petId);
+        setPet(result.pet);
+        await syncPetWithServer(result.pet);
+        // 返回消息，供调用方显示
+        return result.message;
     } catch (e) {
       console.error("抚摸同步失败:", e);
+      return undefined;
     }
   }, [pet]);
 

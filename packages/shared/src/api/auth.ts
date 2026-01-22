@@ -1,43 +1,77 @@
-import { delay } from "./mockData";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { request } from './request';
+import { setAuthToken, clearAuthToken, getAuthToken } from './config';
 
-const AUTH_KEY = "@user_auth";
+export interface AuthResponse {
+  token: string;
+  userId: number;
+  expiresAt: string;
+}
+
+export interface UserInfo {
+  userId: number;
+  phone: string;
+}
 
 export const authApi = {
   /**
-   * 模拟手机号登录/注册
+   * 手机号注册/登录
    */
   login: async (
     phoneNumber: string,
-  ): Promise<{ token: string; userId: string }> => {
-    await delay(1000);
-    const userId = `user_${phoneNumber}`;
-    const token = `token_${phoneNumber}_${Date.now()}`;
+  ): Promise<{ token: string; userId: number }> => {
+    const response = await request<AuthResponse>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ phone: phoneNumber }),
+    });
 
-    // 保存登录状态
-    await AsyncStorage.setItem(
-      AUTH_KEY,
-      JSON.stringify({ userId, token, phoneNumber }),
-    );
+    // 保存token
+    await setAuthToken(response.token);
 
-    return { userId, token };
+    return {
+      token: response.token,
+      userId: response.userId,
+    };
+  },
+
+  /**
+   * 验证token
+   */
+  verify: async (): Promise<UserInfo | null> => {
+    try {
+      const response = await request<{
+        valid: boolean;
+        userId?: number;
+        phone?: string;
+      }>('/api/auth/verify');
+
+      if (response.valid && response.userId && response.phone) {
+        return {
+          userId: response.userId,
+          phone: response.phone,
+        };
+      }
+      return null;
+    } catch {
+      return null;
+    }
   },
 
   /**
    * 获取当前登录态
    */
-  getCurrentUser: async (): Promise<{
-    userId: string;
-    phoneNumber: string;
-  } | null> => {
-    const data = await AsyncStorage.getItem(AUTH_KEY);
-    return data ? JSON.parse(data) : null;
+  getCurrentUser: async (): Promise<UserInfo | null> => {
+    const token = await getAuthToken();
+    if (!token) {
+      return null;
+    }
+
+    return authApi.verify();
   },
 
   /**
    * 退出登录
    */
   logout: async () => {
-    await AsyncStorage.removeItem(AUTH_KEY);
+    await clearAuthToken();
   },
 };

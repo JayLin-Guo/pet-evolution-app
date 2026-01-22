@@ -201,7 +201,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ pet, onEnter }) => {
             <View style={styles.infoDivider} />
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>经验值</Text>
-              <Text style={styles.infoValue}>{pet.level * 100}</Text>
+              <Text style={styles.infoValue}>{pet.exp}</Text>
             </View>
           </View>
         </Animated.View>

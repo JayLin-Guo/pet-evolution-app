@@ -34,6 +34,7 @@ type NativeToWebMessage =
       environment?: "test" | "product" | "dev";
     }
   | { type: "CHAT_RESPONSE"; data: { reply: string; requestId?: string } }
+  | { type: "ACTION_MESSAGE"; data: { message: string } }
   | { type: "ERROR"; data: { message: string; requestId?: string } };
 
 interface PetWebViewProps {
@@ -150,17 +151,26 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
           }
           case "FEED": {
             // Web 请求喂食 -> 调用 Native 喂食逻辑
-            await onFeed(msg.data?.foodValue);
+            const message = await onFeed(msg.data?.foodValue);
+            if (message) {
+              postToWeb({ type: "ACTION_MESSAGE", data: { message } });
+            }
             return;
           }
           case "PLAY": {
             // Web 请求玩耍 -> 调用 Native 玩耍逻辑
-            await onPlay();
+            const message = await onPlay();
+            if (message) {
+              postToWeb({ type: "ACTION_MESSAGE", data: { message } });
+            }
             return;
           }
           case "TOUCH": {
             // Web 请求抚摸 -> 调用 Native 抚摸逻辑
-            await onTouch();
+            const message = await onTouch();
+            if (message) {
+              postToWeb({ type: "ACTION_MESSAGE", data: { message } });
+            }
             return;
           }
           case "CHAT": {

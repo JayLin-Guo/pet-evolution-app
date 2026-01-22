@@ -7,9 +7,16 @@ import Aurora from "../components/Aurora";
 import GlassSurface from "../components/GlassSurface/GlassSurface";
 import ShinyText from "../components/ShinyText";
 import ClickSpark from "../components/ClickSpark";
+import { PetMessageBubble } from "../components/PetMessageBubble";
 import "./PetScene.css";
 
-export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
+export function PetScene({
+  pet,
+  actions,
+  spineBaseUrl,
+  actionMessage: propActionMessage,
+  onActionMessageClose,
+}: PetSceneProps) {
   const [message, setMessage] = useState("");
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -20,6 +27,14 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
   const [currentAnimation, setCurrentAnimation] = useState<string>(
     PetAnimation.IDLE2,
   );
+  const [petMessage, setPetMessage] = useState<string | null>(null);
+
+  // 监听外部传入的消息
+  useEffect(() => {
+    if (propActionMessage) {
+      setPetMessage(propActionMessage);
+    }
+  }, [propActionMessage]);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const expProgress = useMemo(() => {
@@ -59,10 +74,20 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
     const anim = animationMap[action] || PetAnimation.IDLE2;
     setCurrentAnimation(anim);
 
-    if (action === "feed") {
-      await actions.feed(20);
-    } else {
-      await actions[action]();
+    try {
+      let result;
+      if (action === "feed") {
+        result = await actions.feed(20);
+      } else {
+        result = await actions[action]();
+      }
+
+      // 如果有返回消息，显示消息气泡
+      if (result && typeof result === 'object' && 'message' in result) {
+        setPetMessage((result as any).message);
+      }
+    } catch (error) {
+      console.error(`操作 ${action} 失败:`, error);
     }
 
     // 操作完成后，延迟恢复 idle 动画
@@ -105,6 +130,16 @@ export function PetScene({ pet, actions, spineBaseUrl }: PetSceneProps) {
         <div className="pet-display-area">
           <div className="pet-glow" />
           <div className="pet-container">
+            {petMessage && (
+              <PetMessageBubble
+                message={petMessage}
+                duration={3000}
+                onClose={() => {
+                  setPetMessage(null);
+                  onActionMessageClose?.();
+                }}
+              />
+            )}
             <SpinePet
               spineBaseUrl={spineBaseUrl}
               animation={currentAnimation}

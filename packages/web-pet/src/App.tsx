@@ -7,6 +7,7 @@ function App() {
   const bridge = useMemo(() => createWebViewBridge(), []);
   const [pet, setPet] = useState<Pet | null>(null);
   const [spineBaseUrl, setSpineBaseUrl] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const disposeBridge = bridge.connect();
@@ -15,22 +16,35 @@ function App() {
 
     const disposeSpineUrl = bridge.onSpineBaseUrlChange(setSpineBaseUrl);
 
+    const disposeActionMessage = bridge.onActionMessage(setActionMessage);
+
     return () => {
       disposePet();
       disposeSpineUrl();
+      disposeActionMessage();
       disposeBridge();
     };
   }, [bridge]);
 
   const actions: PetSceneActions = useMemo(
     () => ({
-      feed: (foodValue) => bridge.feed(foodValue),
-      play: () => bridge.play(),
-      touch: () => bridge.touch(),
+      feed: async (foodValue) => {
+        bridge.feed(foodValue);
+        // 消息会通过 onActionMessage 回调设置
+        return { pet: pet!, message: actionMessage || undefined };
+      },
+      play: async () => {
+        bridge.play();
+        return { pet: pet!, message: actionMessage || undefined };
+      },
+      touch: async () => {
+        bridge.touch();
+        return { pet: pet!, message: actionMessage || undefined };
+      },
       chat: (text) => bridge.chat(text),
       logout: () => bridge.logout(),
     }),
-    [bridge],
+    [bridge, pet, actionMessage],
   );
 
   if (!pet) {
@@ -42,7 +56,15 @@ function App() {
     );
   }
 
-  return <PetScene pet={pet} actions={actions} spineBaseUrl={spineBaseUrl} />;
+  return (
+    <PetScene
+      pet={pet}
+      actions={actions}
+      spineBaseUrl={spineBaseUrl}
+      actionMessage={actionMessage}
+      onActionMessageClose={() => setActionMessage(null)}
+    />
+  );
 }
 
 export default App;

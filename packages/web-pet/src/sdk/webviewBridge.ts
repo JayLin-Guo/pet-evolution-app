@@ -12,6 +12,7 @@ type NativeToWebMessage =
       environment?: Environment;
     }
   | { type: "CHAT_RESPONSE"; data: { reply: string; requestId?: string } }
+  | { type: "ACTION_MESSAGE"; data: { message: string } }
   | { type: "ERROR"; data: { message: string; requestId?: string } };
 
 type WebToNativeMessage =
@@ -36,6 +37,7 @@ export interface WebViewBridge {
   getSpineBaseUrl: () => string | null;
   onPetChange: (listener: (pet: Pet) => void) => () => void;
   onSpineBaseUrlChange: (listener: (url: string | null) => void) => () => void;
+  onActionMessage: (listener: (message: string) => void) => () => void;
   feed: (foodValue?: number) => void;
   play: () => void;
   touch: () => void;
@@ -48,6 +50,7 @@ export function createWebViewBridge(): WebViewBridge {
   let spineBaseUrl: string | null = null;
   const petListeners = new Set<(p: Pet) => void>();
   const spineBaseUrlListeners = new Set<(url: string | null) => void>();
+  const actionMessageListeners = new Set<(message: string) => void>();
 
   const pendingChats = new Map<
     string,
@@ -105,6 +108,11 @@ export function createWebViewBridge(): WebViewBridge {
       return;
     }
 
+    if (msg.type === "ACTION_MESSAGE") {
+      actionMessageListeners.forEach((fn) => fn(msg.data.message));
+      return;
+    }
+
     if (msg.type === "ERROR") {
       const requestId = msg.data?.requestId;
       if (requestId && pendingChats.has(requestId)) {
@@ -141,6 +149,10 @@ export function createWebViewBridge(): WebViewBridge {
       spineBaseUrlListeners.add(fn);
       if (spineBaseUrl) fn(spineBaseUrl);
       return () => spineBaseUrlListeners.delete(fn);
+    },
+    onActionMessage: (fn) => {
+      actionMessageListeners.add(fn);
+      return () => actionMessageListeners.delete(fn);
     },
     feed: (foodValue) => post({ type: "FEED", data: { foodValue } }),
     play: () => post({ type: "PLAY" }),

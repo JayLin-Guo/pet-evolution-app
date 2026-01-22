@@ -1,0 +1,32 @@
+### 测试认证接口
+POST http://localhost:8011/api/auth/register
+Content-Type: application/json
+
+{
+  "phone": "13800138000"
+}
+
+### 验证token
+GET http://localhost:8011/api/auth/verify
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 获取宠物蛋列表
+GET http://localhost:8011/api/pet-eggs
+
+### 抽取宠物蛋
+POST http://localhost:8011/api/pet-eggs/draw
+
+### 领养宠物（需要token）
+POST http://localhost:8011/api/pets/adopt
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "pet_egg_id": 1,
+  "name": "我的宠物"
+}
+
+### 获取我的宠物（需要token）
+GET http://localhost:8011/api/pets
+Authorization: Bearer YOUR_TOKEN_HERE
+
