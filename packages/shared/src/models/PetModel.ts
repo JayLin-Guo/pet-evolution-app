@@ -37,7 +37,7 @@ export enum UltimateForm {
  */
 export enum PetAnimation {
   /** 默认站立/呼吸 */
-  IDLE = "idle",
+  IDLE = "idle1",
   /** 闲置动作变体 (更生动) */
   IDLE2 = "idle2",
   /** 行走 */
