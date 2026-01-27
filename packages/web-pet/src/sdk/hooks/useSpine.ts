@@ -7,22 +7,43 @@ import { getEnvironmentConfig, type Environment } from "../config";
  */
 export function useSpineResources(
   pet: Pet | undefined,
-  environment: Environment = "test",
+  environment: Environment = (() => {
+    // 本地开发时默认走 dev（避免 /api/static 落到前端 dev server 返回 index.html）
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1") return "dev";
+    }
+    return "test";
+  })(),
 ) {
   return useMemo(() => {
     if (!pet?.spinePath) return { jsonUrl: null, atlasUrl: null };
 
     const config = getEnvironmentConfig(environment);
     const baseUrl = config.staticBaseUrl.replace(/\/$/, "");
-    const path = pet.spinePath.startsWith("/")
-      ? pet.spinePath
-      : `/${pet.spinePath}`;
+    const rawPath = pet.spinePath.startsWith("/") ? pet.spinePath : `/${pet.spinePath}`;
 
-    const fullPath = `${baseUrl}${path}`;
-    return {
-      jsonUrl: `${fullPath}.json`,
-      atlasUrl: `${fullPath}.atlas`,
-    };
+    // 兼容老格式：/mon_earth_dragon_01_v38/mon_earth_dragon_01
+    // 目标格式：
+    // - json:  /mon_earth_dragon_01/mon_earth_dragon_01_v38.json
+    // - atlas: /mon_earth_dragon_01/mon_earth_dragon_01.atlas
+    const parts = rawPath.replace(/^\/+/, "").split("/").filter(Boolean);
+    if (parts.length >= 2) {
+      const folder = parts[0];
+      const fileBase = parts[1];
+      if (folder.endsWith("_v38") && fileBase === folder.replace(/_v38$/, "")) {
+        const base = folder.replace(/_v38$/, "");
+        const fullBase = `${baseUrl}/${base}/${base}`;
+        return {
+          jsonUrl: `${fullBase}_v38.json`,
+          atlasUrl: `${fullBase}.atlas`,
+        };
+      }
+    }
+
+    // 默认规则：/xxx/yyy -> /xxx/yyy.json & /xxx/yyy.atlas
+    const fullPath = `${baseUrl}${rawPath}`;
+    return { jsonUrl: `${fullPath}.json`, atlasUrl: `${fullPath}.atlas` };
   }, [pet?.spinePath, environment]);
 }
 
@@ -56,15 +77,17 @@ export function useSpinePlayer(
       try {
         // 动态加载 spine-player 库（如果尚未加载）
         if (!(window as any).spine) {
+          // 优先使用本地静态资源（避免外网 CDN 在国内/公司网络不可用导致加载超时）
+          // Vite 会将 `public/` 目录下文件映射到站点根路径。
           const script = document.createElement("script");
           script.src =
-            "https://cdn.jsdelivr.net/npm/@esotericsoftware/spine-player@4.2/dist/iife/spine-player.js";
+            "/spine-player.js";
           script.async = true;
 
           const link = document.createElement("link");
           link.rel = "stylesheet";
           link.href =
-            "https://cdn.jsdelivr.net/npm/@esotericsoftware/spine-player@4.2/dist/spine-player.css";
+            "/spine-player.css";
 
           document.head.appendChild(link);
           document.head.appendChild(script);
@@ -72,11 +95,20 @@ export function useSpinePlayer(
           await new Promise<void>((resolve, reject) => {
             script.onload = () => resolve();
             script.onerror = () =>
-              reject(new Error("Failed to load spine-player.js"));
+              reject(
+                new Error(
+                  "Failed to load spine-player.js (check /spine-player.js is reachable)",
+                ),
+              );
             // 超时保护
             setTimeout(
-              () => reject(new Error("Spine player load timeout")),
-              10000,
+              () =>
+                reject(
+                  new Error(
+                    "Spine player load timeout (check /spine-player.js is reachable)",
+                  ),
+                ),
+              15000,
             );
           });
         }

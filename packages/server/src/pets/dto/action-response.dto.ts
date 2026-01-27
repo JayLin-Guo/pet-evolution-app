@@ -5,4 +5,3 @@ export class ActionResponseDto {
   cooldownRemaining?: number; // 剩余冷却时间（秒）
   message?: string; // 提示信息
 }
-

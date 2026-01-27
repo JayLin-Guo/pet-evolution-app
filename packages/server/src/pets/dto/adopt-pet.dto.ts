@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsInt, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsInt,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export class AdoptPetDto {
   @IsInt()
@@ -11,4 +17,3 @@ export class AdoptPetDto {
   @MaxLength(50)
   name: string;
 }
-

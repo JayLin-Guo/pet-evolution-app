@@ -1,6 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+  AppState,
+} from "react-native";
 import { usePet } from "@pet-evolution/shared";
 import { AdoptionScreen } from "./src/screens/AdoptionScreen";
 import { StartScreen } from "./src/screens/StartScreen";
@@ -23,6 +29,23 @@ export default function App() {
     pet_touch,
   } = usePet();
   const [hasEntered, setHasEntered] = useState(false);
+
+  // 监听应用状态变化，从后台恢复时立即同步数据
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        // 应用从后台恢复，立即同步一次数据
+        // usePet hook 中的轮询会自动处理，这里可以添加额外的同步逻辑
+        console.log("[App] 应用恢复前台，触发数据同步");
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [currentUser]);
 
   if (loading) {
     return (

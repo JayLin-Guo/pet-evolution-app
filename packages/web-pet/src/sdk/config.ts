@@ -13,16 +13,18 @@ export interface EnvironmentConfig {
  */
 const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
   test: {
-    // 测试环境：使用相对路径，以便支持本地代理 (开发时) 或同源部署
-    staticBaseUrl: "/static/",
+    // 测试环境：使用后端API从zip文件中读取（节省nginx空间）
+    // 如果zip文件解压在nginx，可以改为 "/static/"
+    staticBaseUrl: "/api/static/",
   },
   product: {
-    // 生产环境：可以换成 CDN 或生产服务器
-    staticBaseUrl: "https://your-cdn.com/static/",
+    // 生产环境：使用后端API从zip文件中读取
+    // 如果使用CDN，可以改为 "https://your-cdn.com/static/"
+    staticBaseUrl: "/api/static/",
   },
   dev: {
     // 开发环境：本地开发服务器
-    staticBaseUrl: "http://localhost:3000/static/",
+    staticBaseUrl: "http://localhost:8011/api/static/",
   },
 };
 

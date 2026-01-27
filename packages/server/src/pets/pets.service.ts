@@ -99,6 +99,9 @@ export class PetsService {
       throw new NotFoundException('宠物不存在');
     }
 
+    // 在返回前先更新一次状态，确保返回最新数据
+    await this.updatePetStatus(pet);
+
     return this.toResponseDto(pet, pet.petEgg);
   }
 
@@ -114,6 +117,9 @@ export class PetsService {
     if (!pet) {
       return null;
     }
+
+    // 在返回前先更新一次状态，确保返回最新数据
+    await this.updatePetStatus(pet);
 
     return this.toResponseDto(pet, pet.petEgg);
   }
@@ -150,32 +156,26 @@ export class PetsService {
       throw new NotFoundException('宠物不存在');
     }
 
-    // 检查冷却时间
-    const cooldown = this.checkCooldown(pet.last_feed_at);
-    if (cooldown !== null) {
-      return {
-        pet: await this.findOne(id, userId),
-        cooldownRemaining: cooldown,
-        message: '主人，你精力好旺盛',
-      };
-    }
-
-    // 检查是否已达到上限
-    if (pet.hunger >= MAX_VALUE) {
-      return {
-        pet: await this.findOne(id, userId),
-        message: '宠物已经吃饱了',
-      };
-    }
-
     // 记录操作前状态
     const beforeHunger = pet.hunger;
     const beforeHappiness = pet.happiness;
     const beforeHealth = pet.health;
 
-    // 更新属性
-    pet.hunger = Math.min(MAX_VALUE, pet.hunger + ACTION_VALUE);
-    pet.last_feed_at = new Date();
+    // 更新属性：如果已经满值，不增加但更新喂食时间
+    let message: string | undefined;
+    if (pet.hunger >= MAX_VALUE) {
+      message = '宠物已经吃饱了';
+      // 即使已满，也更新喂食时间，重置衰减时间
+      pet.last_feed_at = new Date();
+      pet.last_hunger_decrease_at = null;
+    } else {
+      // 未满时增加饥饿值
+      const newHunger = Math.min(MAX_VALUE, pet.hunger + ACTION_VALUE);
+      pet.hunger = newHunger;
+      pet.last_feed_at = new Date();
+      // 重置饥饿值减少时间，因为刚喂食，应该从这次喂食时间开始计算
+      pet.last_hunger_decrease_at = null;
+    }
 
     // 记录操作
     await this.petActionRepository.save({
@@ -192,9 +192,24 @@ export class PetsService {
 
     await this.petRepository.save(pet);
 
-    return {
-      pet: await this.findOne(id, userId),
+    // 重新加载关联数据（petEgg）用于返回
+    const updatedPet = await this.petRepository.findOne({
+      where: { id, user_id: userId },
+      relations: ['petEgg'],
+    });
+
+    if (!updatedPet) {
+      throw new NotFoundException('宠物不存在');
+    }
+
+    // 直接返回更新后的数据，不调用updatePetStatus（因为刚操作完，状态已经是最新的）
+    const result: ActionResponseDto = {
+      pet: this.toResponseDto(updatedPet, updatedPet.petEgg),
     };
+    if (message) {
+      result.message = message;
+    }
+    return result;
   }
 
   /**
@@ -209,32 +224,23 @@ export class PetsService {
       throw new NotFoundException('宠物不存在');
     }
 
-    // 检查冷却时间
-    const cooldown = this.checkCooldown(pet.last_play_at);
-    if (cooldown !== null) {
-      return {
-        pet: await this.findOne(id, userId),
-        cooldownRemaining: cooldown,
-        message: '主人，你精力好旺盛',
-      };
-    }
-
-    // 检查是否已达到上限
-    if (pet.health >= MAX_VALUE) {
-      return {
-        pet: await this.findOne(id, userId),
-        message: '宠物已经很健康了',
-      };
-    }
-
     // 记录操作前状态
     const beforeHunger = pet.hunger;
     const beforeHappiness = pet.happiness;
     const beforeHealth = pet.health;
 
-    // 更新属性
-    pet.health = Math.min(MAX_VALUE, pet.health + ACTION_VALUE);
-    pet.last_play_at = new Date();
+    // 更新属性：如果已经满值，不增加但更新操作时间
+    let message: string | undefined;
+    if (pet.health >= MAX_VALUE) {
+      message = '宠物已经很健康了';
+      // 即使已满，也更新操作时间
+      pet.last_play_at = new Date();
+    } else {
+      // 未满时增加健康值
+      pet.health = Math.min(MAX_VALUE, pet.health + ACTION_VALUE);
+      pet.last_play_at = new Date();
+    }
+    // 玩耍不影响饥饿和快乐的衰减时间，所以不需要重置
 
     // 记录操作
     await this.petActionRepository.save({
@@ -251,9 +257,24 @@ export class PetsService {
 
     await this.petRepository.save(pet);
 
-    return {
-      pet: await this.findOne(id, userId),
+    // 重新加载关联数据（petEgg）用于返回
+    const updatedPet = await this.petRepository.findOne({
+      where: { id, user_id: userId },
+      relations: ['petEgg'],
+    });
+
+    if (!updatedPet) {
+      throw new NotFoundException('宠物不存在');
+    }
+
+    // 直接返回更新后的数据，不调用updatePetStatus（因为刚操作完，状态已经是最新的）
+    const result: ActionResponseDto = {
+      pet: this.toResponseDto(updatedPet, updatedPet.petEgg),
     };
+    if (message) {
+      result.message = message;
+    }
+    return result;
   }
 
   /**
@@ -268,32 +289,25 @@ export class PetsService {
       throw new NotFoundException('宠物不存在');
     }
 
-    // 检查冷却时间
-    const cooldown = this.checkCooldown(pet.last_touch_at);
-    if (cooldown !== null) {
-      return {
-        pet: await this.findOne(id, userId),
-        cooldownRemaining: cooldown,
-        message: '主人，你精力好旺盛',
-      };
-    }
-
-    // 检查是否已达到上限
-    if (pet.happiness >= MAX_VALUE) {
-      return {
-        pet: await this.findOne(id, userId),
-        message: '宠物已经很开心了',
-      };
-    }
-
     // 记录操作前状态
     const beforeHunger = pet.hunger;
     const beforeHappiness = pet.happiness;
     const beforeHealth = pet.health;
 
-    // 更新属性
-    pet.happiness = Math.min(MAX_VALUE, pet.happiness + ACTION_VALUE);
-    pet.last_touch_at = new Date();
+    // 更新属性：如果已经满值，不增加但更新操作时间
+    let message: string | undefined;
+    if (pet.happiness >= MAX_VALUE) {
+      message = '宠物已经很开心了';
+      // 即使已满，也更新操作时间，重置衰减时间
+      pet.last_touch_at = new Date();
+      pet.last_happiness_decrease_at = null;
+    } else {
+      // 未满时增加快乐值
+      pet.happiness = Math.min(MAX_VALUE, pet.happiness + ACTION_VALUE);
+      pet.last_touch_at = new Date();
+      // 重置快乐值减少时间，因为刚抚摸，应该从这次抚摸时间开始计算
+      pet.last_happiness_decrease_at = null;
+    }
 
     // 记录操作
     await this.petActionRepository.save({
@@ -310,9 +324,24 @@ export class PetsService {
 
     await this.petRepository.save(pet);
 
-    return {
-      pet: await this.findOne(id, userId),
+    // 重新加载关联数据（petEgg）用于返回
+    const updatedPet = await this.petRepository.findOne({
+      where: { id, user_id: userId },
+      relations: ['petEgg'],
+    });
+
+    if (!updatedPet) {
+      throw new NotFoundException('宠物不存在');
+    }
+
+    // 直接返回更新后的数据，不调用updatePetStatus（因为刚操作完，状态已经是最新的）
+    const result: ActionResponseDto = {
+      pet: this.toResponseDto(updatedPet, updatedPet.petEgg),
     };
+    if (message) {
+      result.message = message;
+    }
+    return result;
   }
 
   /**
@@ -393,34 +422,58 @@ export class PetsService {
 
   /**
    * 更新宠物状态（定时任务调用）
+   *
+   * 修复：根据最后一次操作时间计算状态衰减
+   * - 饥饿值：从最后一次喂食时间开始，每3小时减少1点
+   *   如果没有喂食过（last_feed_at 为 null），则从创建时间（created_at）开始计算
+   * - 快乐值：从最后一次抚摸时间开始，如果饥饿<7，每2小时减少1点
+   *   如果没有抚摸过（last_touch_at 为 null），则从创建时间（created_at）开始计算
+   * - 健康值：根据饥饿值计算，如果饥饿<5，健康值会降低
    */
   async updatePetStatus(pet: Pet): Promise<void> {
     const now = new Date();
     let updated = false;
 
-    // 1. 饥饿值减少：每3小时检查一次，如果饥饿>0则-1，直到0
-    // 当饥饿值达到10后，每3小时减少1点，持续减少直到0
+    // 1. 饥饿值减少：从最后一次喂食时间开始，每3小时减少1点
+    // 如果没有喂食过（last_feed_at 为 null），则从创建时间开始计算
     if (pet.hunger > 0) {
-      const lastDecrease = pet.last_hunger_decrease_at || pet.created_at;
-      const hoursSinceLastDecrease =
-        (now.getTime() - lastDecrease.getTime()) / (1000 * 60 * 60);
+      const lastFeedTime = pet.last_feed_at || pet.created_at;
+      const hoursSinceLastFeed =
+        (now.getTime() - lastFeedTime.getTime()) / (1000 * 60 * 60);
 
-      if (hoursSinceLastDecrease >= 3) {
-        pet.hunger = Math.max(0, pet.hunger - 1);
-        pet.last_hunger_decrease_at = now;
+      if (hoursSinceLastFeed >= 3) {
+        // 计算应该减少的点数：每3小时减1点
+        const decreaseAmount = Math.floor(hoursSinceLastFeed / 3);
+        const oldHunger = pet.hunger;
+        pet.hunger = Math.max(0, pet.hunger - decreaseAmount);
+
+        // 更新最后一次减少时间：最后一次喂食时间 + 实际减少的周期数 * 3小时
+        const actualDecreaseCycles = Math.min(decreaseAmount, oldHunger);
+        pet.last_hunger_decrease_at = new Date(
+          lastFeedTime.getTime() + actualDecreaseCycles * 3 * 60 * 60 * 1000,
+        );
         updated = true;
       }
     }
 
-    // 2. 快乐值减少：每2小时检查一次，如果饥饿<7则-1快乐
+    // 2. 快乐值减少：如果饥饿<7，从最后一次抚摸时间开始，每2小时减少1点
+    // 如果没有抚摸过（last_touch_at 为 null），则从创建时间开始计算
     if (pet.hunger < 7) {
-      const lastDecrease = pet.last_happiness_decrease_at || pet.created_at;
-      const hoursSinceLastDecrease =
-        (now.getTime() - lastDecrease.getTime()) / (1000 * 60 * 60);
+      const lastTouchTime = pet.last_touch_at || pet.created_at;
+      const hoursSinceLastTouch =
+        (now.getTime() - lastTouchTime.getTime()) / (1000 * 60 * 60);
 
-      if (hoursSinceLastDecrease >= 2) {
-        pet.happiness = Math.max(0, pet.happiness - 1);
-        pet.last_happiness_decrease_at = now;
+      if (hoursSinceLastTouch >= 2) {
+        // 计算应该减少的点数：每2小时减1点
+        const decreaseAmount = Math.floor(hoursSinceLastTouch / 2);
+        const oldHappiness = pet.happiness;
+        pet.happiness = Math.max(0, pet.happiness - decreaseAmount);
+
+        // 更新最后一次减少时间：最后一次抚摸时间 + 实际减少的周期数 * 2小时
+        const actualDecreaseCycles = Math.min(decreaseAmount, oldHappiness);
+        pet.last_happiness_decrease_at = new Date(
+          lastTouchTime.getTime() + actualDecreaseCycles * 2 * 60 * 60 * 1000,
+        );
         updated = true;
       }
     }
@@ -435,19 +488,36 @@ export class PetsService {
       }
     }
 
-    // 4. 经验值增长：每3小时检查一次
+    // 4. 经验值增长：每3小时检查一次，根据当前饥饿值计算
     const lastExpIncrease = pet.last_exp_increase_at || pet.created_at;
     const hoursSinceLastExpIncrease =
       (now.getTime() - lastExpIncrease.getTime()) / (1000 * 60 * 60);
 
     if (hoursSinceLastExpIncrease >= 3) {
-      if (pet.hunger >= 9) {
-        pet.exp += 2;
-      } else if (pet.hunger >= 7) {
-        pet.exp += 1;
+      // 计算应该增长的周期数
+      const increaseCycles = Math.floor(hoursSinceLastExpIncrease / 3);
+
+      // 根据每个周期的饥饿值计算经验增长
+      // 为了简化，使用当前饥饿值作为参考（实际应该回溯计算，但这里简化处理）
+      for (let i = 0; i < increaseCycles; i++) {
+        // 估算该周期开始时的饥饿值（当前饥饿值 + 从该周期到现在减少的饥饿值）
+        const estimatedHungerAtCycle = Math.min(
+          10,
+          pet.hunger + (increaseCycles - i) * 1,
+        );
+
+        if (estimatedHungerAtCycle >= 9) {
+          pet.exp += 2;
+        } else if (estimatedHungerAtCycle >= 7) {
+          pet.exp += 1;
+        }
+        // 饥饿<7时不增长经验
       }
-      // 饥饿<7时不增长经验
-      pet.last_exp_increase_at = now;
+
+      // 更新时间为：上次增长时间 + 实际增长的周期数 * 3小时
+      pet.last_exp_increase_at = new Date(
+        lastExpIncrease.getTime() + increaseCycles * 3 * 60 * 60 * 1000,
+      );
       updated = true;
     }
 

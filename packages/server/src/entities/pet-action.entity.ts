@@ -61,4 +61,3 @@ export class PetAction {
   @JoinColumn({ name: 'pet_id' })
   pet: Pet;
 }
-

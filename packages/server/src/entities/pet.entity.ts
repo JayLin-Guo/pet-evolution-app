@@ -98,21 +98,21 @@ export class Pet {
     nullable: true,
     comment: '上次饥饿值减少时间（用于计算3小时间隔）',
   })
-  last_hunger_decrease_at: Date;
+  last_hunger_decrease_at: Date | null;
 
   @Column({
     type: 'datetime',
     nullable: true,
     comment: '上次快乐值减少时间（用于计算2小时间隔）',
   })
-  last_happiness_decrease_at: Date;
+  last_happiness_decrease_at: Date | null;
 
   @Column({
     type: 'datetime',
     nullable: true,
     comment: '上次经验值增长时间（用于计算3小时间隔）',
   })
-  last_exp_increase_at: Date;
+  last_exp_increase_at: Date | null;
 
   @Column({
     type: 'datetime',

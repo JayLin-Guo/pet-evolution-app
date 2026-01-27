@@ -24,7 +24,14 @@ interface SpinePetProps {
  * 使用 @esotericsoftware/spine-player 渲染 Spine 动画
  */
 export function SpinePet({
-  environment = "test",
+  environment = (() => {
+    // 本地开发时默认走 dev（否则 /api/static 会落到 3000 返回 index.html）
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      if (host === "localhost" || host === "127.0.0.1") return "dev";
+    }
+    return "test";
+  })(),
   animation = PetAnimation.IDLE2,
   pet,
 }: SpinePetProps) {

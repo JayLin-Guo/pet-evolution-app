@@ -25,8 +25,14 @@ export const request = async <T>(
 
   const config: RequestInit = {
     ...options,
+    // 禁用缓存，确保每次请求都获取最新数据
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
+      // 额外的缓存控制头
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -40,6 +46,12 @@ export const request = async <T>(
       // 清除token并触发登出
       await clearAuthToken();
       throw new Error('未授权，请重新登录');
+    }
+
+    // 如果收到304，说明缓存生效了，但我们已经设置了no-store，理论上不应该出现
+    // 如果仍然出现304，记录日志但不处理（让后续逻辑处理）
+    if (response.status === 304) {
+      console.warn(`[API] 收到304响应，但已禁用缓存: ${url}`);
     }
 
     // 读取响应文本（只能调用一次）

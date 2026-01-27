@@ -11,4 +11,3 @@ import { PetEgg } from '../entities/pet-egg.entity';
   exports: [PetEggsService],
 })
 export class PetEggsModule {}
-

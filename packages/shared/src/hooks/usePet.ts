@@ -38,15 +38,70 @@ export const usePet = () => {
     init();
   }, []);
 
-  // 定时同步宠物状态
-  useEffect(() => {
-    if (!pet || !currentUser) return;
-    const interval = setInterval(() => {
-      syncPetWithServer();
-    }, 60000);
+  /**
+   * 同步数据到服务器/本地存储
+   * 轮询时调用此方法获取最新状态
+   * 注意：不依赖 pet，避免 pet 更新时重新创建函数导致定时器重建
+   */
+  const syncPetWithServer = useCallback(async (targetPet?: Pet) => {
+    if (!currentUser) return;
 
-    return () => clearInterval(interval);
-  }, [pet, currentUser]);
+    try {
+      if (USE_MOCK) {
+        // Mock 模式下，如果有传入的 targetPet 就使用，否则从服务器获取
+        if (targetPet) {
+          await AsyncStorage.setItem(
+            `${STORAGE_KEY}_${currentUser.userId}`,
+            JSON.stringify(targetPet),
+          );
+        }
+      } else {
+        // 重新从服务器获取最新数据（轮询）
+        // 不依赖本地 pet 状态，直接从服务器获取最新数据
+        const updated = await petApi.getPet();
+        if (updated) {
+          setPet(updated);
+        } else {
+          // 如果服务器返回null，说明宠物可能被删除，清空本地状态
+          setPet((prevPet) => {
+            if (prevPet) {
+              return null;
+            }
+            return prevPet;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("同步宠物数据失败:", error);
+      // 轮询失败时不抛出错误，避免中断轮询
+    }
+  }, [currentUser]); // 只依赖 currentUser，不依赖 pet
+
+  // 定时轮询更新宠物状态
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let isMounted = true;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    // 立即同步一次
+    syncPetWithServer();
+
+    // 每2分钟轮询一次，获取最新的宠物状态
+    // 服务器定时任务每10分钟更新一次，2分钟轮询可以及时获取更新
+    intervalId = setInterval(() => {
+      if (isMounted) {
+        syncPetWithServer();
+      }
+    }, 120000); // 2分钟（120秒）
+
+    return () => {
+      isMounted = false;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentUser, syncPetWithServer]);
 
   const loadPet = async () => {
     try {
@@ -80,30 +135,6 @@ export const usePet = () => {
     setPet(null);
   };
 
-  /**
-   * 同步数据到服务器/本地存储
-   */
-  const syncPetWithServer = async (targetPet?: Pet) => {
-    const dataToSync = targetPet || pet;
-    if (!dataToSync || !currentUser) return;
-
-    try {
-      if (USE_MOCK) {
-        await AsyncStorage.setItem(
-          `${STORAGE_KEY}_${currentUser.userId}`,
-          JSON.stringify(dataToSync),
-        );
-      } else {
-        // 重新从服务器获取最新数据
-        const updated = await petApi.getPet();
-        if (updated) {
-          setPet(updated);
-        }
-      }
-    } catch (error) {
-      console.error("同步宠物数据失败:", error);
-    }
-  };
 
   // 领养宠物
   // 注意：这个函数现在只接收 name 参数，内部会自动先抽取宠物蛋

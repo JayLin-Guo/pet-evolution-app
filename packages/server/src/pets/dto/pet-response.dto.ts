@@ -19,4 +19,3 @@ export class PetResponseDto {
   created_at: Date;
   updated_at: Date;
 }
-

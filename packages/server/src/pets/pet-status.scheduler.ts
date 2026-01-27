@@ -3,7 +3,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { PetsService } from './pets.service';
-import { Pet } from '../entities/pet.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 
 /**
@@ -63,4 +62,3 @@ export class PetStatusScheduler {
     }
   }
 }
-

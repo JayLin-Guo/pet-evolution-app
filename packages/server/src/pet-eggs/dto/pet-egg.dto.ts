@@ -15,4 +15,3 @@ export class PetEggResponseDto {
 export class DrawPetEggResponseDto {
   petEgg: PetEggResponseDto;
 }
-
