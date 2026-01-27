@@ -181,7 +181,7 @@ export class PetsStaticService {
       // 调试：打印实际查找的路径
       console.log('[DEBUG] getFileFromZip - normalizedPath:', normalizedPath);
       console.log('[DEBUG] getFileFromZip - filePath:', filePath);
-      
+
       throw new NotFoundException(
         `文件不存在于ZIP中: ${normalizedPath} (原始路径: ${filePath}, ZIP路径: ${this.zipFilePath})${hintText}`,
       );
