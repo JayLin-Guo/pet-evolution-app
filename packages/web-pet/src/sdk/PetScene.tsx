@@ -1,9 +1,8 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { getStageName, type Pet, PetAnimation } from "@pet-evolution/shared";
+import { getStageName, type Pet } from "@pet-evolution/shared";
 import type { MessageItem, PetSceneActions, PetSceneProps } from "./types";
 import { SpinePet } from "./SpinePet";
-import Aurora from "../components/Aurora";
 import GlassSurface from "../components/GlassSurface/GlassSurface";
 import ShinyText from "../components/ShinyText";
 import ClickSpark from "../components/ClickSpark";
@@ -13,7 +12,6 @@ import "./PetScene.css";
 export function PetScene({
   pet,
   actions,
-  spineBaseUrl,
   actionMessage: propActionMessage,
   onActionMessageClose,
 }: PetSceneProps) {
@@ -24,9 +22,6 @@ export function PetScene({
   const [showStatus, setShowStatus] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [pendingChat, setPendingChat] = useState(false);
-  const [currentAnimation, setCurrentAnimation] = useState<string>(
-    PetAnimation.IDLE2,
-  );
   const [petMessage, setPetMessage] = useState<string | null>(null);
 
   // 监听外部传入的消息
@@ -35,7 +30,6 @@ export function PetScene({
       setPetMessage(propActionMessage);
     }
   }, [propActionMessage]);
-  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const expProgress = useMemo(() => {
     const maxExp = pet.level * 100;
@@ -59,21 +53,6 @@ export function PetScene({
   const handleAction = async (
     action: keyof Pick<PetSceneActions, "feed" | "play" | "touch">,
   ) => {
-    // 清除之前的 timeout
-    if (animationTimeoutRef.current) {
-      clearTimeout(animationTimeoutRef.current);
-      animationTimeoutRef.current = null;
-    }
-
-    // 根据操作切换动画
-    const animationMap: Record<string, string> = {
-      feed: PetAnimation.FEED,
-      play: PetAnimation.PLAY,
-      touch: PetAnimation.TOUCH,
-    };
-    const anim = animationMap[action] || PetAnimation.IDLE2;
-    setCurrentAnimation(anim);
-
     try {
       let result;
       if (action === "feed") {
@@ -83,37 +62,13 @@ export function PetScene({
       }
 
       // 如果有返回消息，显示消息气泡
-      if (result && typeof result === 'object' && 'message' in result) {
+      if (result && typeof result === "object" && "message" in result) {
         setPetMessage((result as any).message);
       }
     } catch (error) {
       console.error(`操作 ${action} 失败:`, error);
     }
-
-    // 操作完成后，延迟恢复 idle 动画
-    animationTimeoutRef.current = setTimeout(() => {
-      setCurrentAnimation(PetAnimation.IDLE2);
-      animationTimeoutRef.current = null;
-    }, 2000);
   };
-
-  // 根据宠物状态自动切换动画
-  useEffect(() => {
-    // 如果当前没有特定操作动画，根据宠物状态选择
-    if (
-      currentAnimation === PetAnimation.IDLE2 ||
-      currentAnimation === PetAnimation.IDLE
-    ) {
-      // 可以根据 pet 的状态选择不同的 idle 动画
-      // 例如：如果饥饿值低，可以显示 "hungry" 动画
-      if (pet.hunger < 30) {
-        // 饥饿状态暂时使用 IDLE，或者后续添加 HUNGRY 枚举
-        setCurrentAnimation(PetAnimation.IDLE);
-      } else {
-        setCurrentAnimation(PetAnimation.IDLE2);
-      }
-    }
-  }, [pet.hunger, currentAnimation]);
 
   return (
     <div className="pet-main-container pet-web-container">
@@ -140,11 +95,8 @@ export function PetScene({
                 }}
               />
             )}
-            <SpinePet
-              spineBaseUrl={spineBaseUrl}
-              animation={currentAnimation}
-              pet={pet}
-            />
+
+            <SpinePet pet={pet} />
           </div>
           <div className="pet-shadow" />
         </div>
@@ -362,7 +314,7 @@ export function PetScene({
               className="mode-button"
               onClick={() => setIsVoiceMode(!isVoiceMode)}
             >
-           <Icon icon="mynaui:contactless-solid" width="24" height="24" />
+              <Icon icon="mynaui:contactless-solid" width="24" height="24" />
             </button>
 
             {isVoiceMode ? (

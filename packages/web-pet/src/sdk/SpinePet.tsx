@@ -9,14 +9,9 @@ interface SpinePetProps {
    * 默认为 'test'
    */
   environment?: Environment;
-  /** 当前要播放的动画名称 */
-  animation?: string;
+
   /** 宠物信息（包含 spinePath） */
   pet?: Pet;
-  /**
-   * @deprecated 以前的版本字段，为了兼容暂留，但主要的路径构建应使用 environment + pet.spinePath
-   */
-  spineBaseUrl?: string | null;
 }
 
 /**
@@ -32,7 +27,7 @@ export function SpinePet({
     }
     return "test";
   })(),
-  animation = PetAnimation.IDLE2,
+
   pet,
 }: SpinePetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,12 +36,7 @@ export function SpinePet({
   const { jsonUrl, atlasUrl } = useSpineResources(pet, environment);
 
   // 2. 初始化 Player 并管理生命周期
-  const { isLoading, error } = useSpinePlayer(
-    containerRef,
-    jsonUrl,
-    atlasUrl,
-    animation,
-  );
+  const { isLoading, error } = useSpinePlayer(containerRef, jsonUrl, atlasUrl);
 
   // 如果没有 jsonUrl (即没有 pet.spinePath)，显示占位符
   if (!jsonUrl) {

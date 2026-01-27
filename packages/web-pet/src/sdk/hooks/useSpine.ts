@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { PetAnimation, type Pet } from "@pet-evolution/shared";
+import type { Pet } from "@pet-evolution/shared";
 import { getEnvironmentConfig, type Environment } from "../config";
 
 /**
@@ -19,31 +19,20 @@ export function useSpineResources(
   return useMemo(() => {
     if (!pet?.spinePath) return { jsonUrl: null, atlasUrl: null };
 
+    pet.spinePath = "mon_bat_demon_02/mon_bat_demon_02";
+    // pet.spinePath = "mon_earth_dragon_01/mon_earth_dragon_01";
     const config = getEnvironmentConfig(environment);
     const baseUrl = config.staticBaseUrl.replace(/\/$/, "");
-    const rawPath = pet.spinePath.startsWith("/") ? pet.spinePath : `/${pet.spinePath}`;
 
-    // 兼容老格式：/mon_earth_dragon_01_v38/mon_earth_dragon_01
-    // 目标格式：
-    // - json:  /mon_earth_dragon_01/mon_earth_dragon_01_v38.json
-    // - atlas: /mon_earth_dragon_01/mon_earth_dragon_01.atlas
-    const parts = rawPath.replace(/^\/+/, "").split("/").filter(Boolean);
-    if (parts.length >= 2) {
-      const folder = parts[0];
-      const fileBase = parts[1];
-      if (folder.endsWith("_v38") && fileBase === folder.replace(/_v38$/, "")) {
-        const base = folder.replace(/_v38$/, "");
-        const fullBase = `${baseUrl}/${base}/${base}`;
-        return {
-          jsonUrl: `${fullBase}_v38.json`,
-          atlasUrl: `${fullBase}.atlas`,
-        };
-      }
-    }
-
-    // 默认规则：/xxx/yyy -> /xxx/yyy.json & /xxx/yyy.atlas
+    const rawPath = pet.spinePath.startsWith("/")
+      ? pet.spinePath
+      : `/${pet.spinePath}`;
     const fullPath = `${baseUrl}${rawPath}`;
-    return { jsonUrl: `${fullPath}.json`, atlasUrl: `${fullPath}.atlas` };
+
+    return {
+      jsonUrl: `${fullPath}_v38.json`,
+      atlasUrl: `${fullPath}.atlas`,
+    };
   }, [pet?.spinePath, environment]);
 }
 
@@ -54,7 +43,6 @@ export function useSpinePlayer(
   containerRef: React.RefObject<HTMLDivElement>,
   jsonUrl: string | null,
   atlasUrl: string | null,
-  animation: string,
 ) {
   const playerRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,17 +65,13 @@ export function useSpinePlayer(
       try {
         // 动态加载 spine-player 库（如果尚未加载）
         if (!(window as any).spine) {
-          // 优先使用本地静态资源（避免外网 CDN 在国内/公司网络不可用导致加载超时）
-          // Vite 会将 `public/` 目录下文件映射到站点根路径。
           const script = document.createElement("script");
-          script.src =
-            "/spine-player.js";
+          script.src = "/spine-player.js";
           script.async = true;
 
           const link = document.createElement("link");
           link.rel = "stylesheet";
-          link.href =
-            "/spine-player.css";
+          link.href = "/spine-player.css";
 
           document.head.appendChild(link);
           document.head.appendChild(script);
@@ -134,56 +118,56 @@ export function useSpinePlayer(
         }
 
         // 创建新的 SpinePlayer
+        // 注意：不在初始化时传入 animation，避免动画不存在时报错
         playerRef.current = new spine.SpinePlayer(playerDiv, {
           jsonUrl,
           atlasUrl,
-          animation,
+          // animation, // 移除这里，在 success 回调中设置
           premultipliedAlpha: true,
           backgroundColor: "#00000000",
           alpha: true,
           showControls: false,
           preserveDrawingBuffer: false,
-          fitToCanvas: true,
-          viewport: {
-            padLeft: "10%",
-            padRight: "10%",
-            padTop: "10%",
-            padBottom: "10%",
-          },
           success: () => {
             setIsLoading(false);
             setError(null);
             console.log("✅ Spine 加载成功！", {
               jsonUrl,
               atlasUrl,
-              animation,
             });
 
-            // 确保动画开始播放
+            const animation = "attack1a";
+
+            // 智能选择动画：优先使用指定动画，否则使用第一个可用动画
             if (playerRef.current?.skeleton?.data?.animations) {
               const animations = playerRef.current.skeleton.data.animations.map(
                 (anim: any) => anim.name,
               );
-              const hasAnimation = animations.includes(animation);
-              if (hasAnimation) {
-                playerRef.current.setAnimation(animation, true);
-              } else {
-                console.warn("⚠️ 动画不存在，使用 idle2");
-                playerRef.current.setAnimation(PetAnimation.IDLE2, true);
+
+              console.log("📋 可用动画列表:", animations);
+
+              if (animations.length === 0) {
+                return;
               }
+
+              const targetAnimation = animations.includes(animation)
+                ? animation
+                : animations[0];
+
+              console.log("targetAnimation", targetAnimation);
+
+              playerRef.current.setAnimation(targetAnimation, true);
             }
           },
           error: (_: any, msg: string) => {
             setIsLoading(false);
             setError(msg);
-            console.error("❌ Spine 加载失败:", msg);
           },
         });
       } catch (e: any) {
         setIsLoading(false);
         const errorMsg = e?.message || "未知错误";
         setError(errorMsg);
-        console.error("❌ Spine 初始化失败:", e);
       }
     };
 
@@ -200,27 +184,6 @@ export function useSpinePlayer(
       }
     };
   }, [jsonUrl, atlasUrl]); // 只在 URL 变化时重新加载
-
-  // 监听 animation 变化并切换动画
-  useEffect(() => {
-    if (!playerRef.current || !playerRef.current.skeleton) return;
-
-    try {
-      const animationData = playerRef.current.skeleton.data;
-      const hasAnimation = animationData.animations.some(
-        (anim: any) => anim.name === animation,
-      );
-
-      if (hasAnimation) {
-        playerRef.current.setAnimation(animation, true);
-      } else {
-        console.warn("⚠️ 动画不存在，使用 idle2");
-        playerRef.current.setAnimation(PetAnimation.IDLE2, true);
-      }
-    } catch (e) {
-      console.error("切换动画失败:", e);
-    }
-  }, [animation]);
 
   return { isLoading, error };
 }

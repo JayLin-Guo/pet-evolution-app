@@ -152,48 +152,48 @@ def convert_timeline(timeline: List[Dict], timeline_type: str) -> List[Dict]:
         is_first = (i == 0)
         cleaned = {}
         
-        # 时间
-        if 'time' in keyframe:
-            time_val = keyframe['time']
-            if time_val != 0 or not is_first:
-                cleaned['time'] = time_val
+        # 处理时间
+        time_val = keyframe.get('time', 0)
+        if time_val != 0:
+            cleaned['time'] = time_val
         
-        # 根据类型处理值
+        # 根据类型处理属性
+        has_val = False
         if timeline_type == 'rotate':
             if 'angle' in keyframe and keyframe['angle'] != 0:
                 cleaned['angle'] = keyframe['angle']
-        
+                has_val = True
         elif timeline_type == 'translate':
-            if 'x' in keyframe and keyframe['x'] != 0:
+            if keyframe.get('x', 0) != 0:
                 cleaned['x'] = keyframe['x']
-            if 'y' in keyframe and keyframe['y'] != 0:
+                has_val = True
+            if keyframe.get('y', 0) != 0:
                 cleaned['y'] = keyframe['y']
-        
+                has_val = True
         elif timeline_type == 'scale':
-            # scale 的默认值是 1，不是 0
-            if 'x' in keyframe:
-                if keyframe['x'] != 1:
-                    cleaned['x'] = keyframe['x']
-            if 'y' in keyframe:
-                if keyframe['y'] != 1:
-                    cleaned['y'] = keyframe['y']
-        
+            if keyframe.get('x', 1) != 1:
+                cleaned['x'] = keyframe['x']
+                has_val = True
+            if keyframe.get('y', 1) != 1:
+                cleaned['y'] = keyframe['y']
+                has_val = True
         elif timeline_type in ['attachment', 'color']:
-            # 这些类型保留所有值
-            for key in ['name', 'color']:
-                if key in keyframe:
-                    cleaned[key] = keyframe[key]
+            if 'name' in keyframe:
+                cleaned['name'] = keyframe['name']
+                has_val = True
+            if 'color' in keyframe:
+                cleaned['color'] = keyframe['color']
+                has_val = True
         
-        # 处理曲线
+        # 处理曲线 (只有在不是最后一帧且有意义时添加)
         if 'curve' in keyframe:
             curve_data = convert_curve(keyframe['curve'])
             cleaned.update(curve_data)
         
-        # 只有当清理后的帧不是空的（除了可能的 time），才添加
-        if len(cleaned) > 0:
-            # 如果只有 time 且为 0，并且是第一帧，检查是否有其他有意义的数据
-            if is_first and cleaned == {}:
-                cleaned = {}  # 空对象
+        # 核心修复：如果是第一帧且没有值，必须保留一个 {}
+        if is_first:
+            converted.append(cleaned)
+        elif len(cleaned) > 0:
             converted.append(cleaned)
     
     return converted
@@ -435,7 +435,7 @@ def convert_spine_1_9_to_3_8(input_file: Path, output_file: Path, reference_file
     # 6. 写入输出文件
     print(f"写入输出文件: {output_file}")
     with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(new_data, f, ensure_ascii=False, indent=4)
+        json.dump(new_data, f, ensure_ascii=False, indent=2)
     
     print("转换完成！")
     

@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-批量转换 Spine 文件脚本
-扫描指定目录下的所有子文件夹，转换 JSON 文件并处理 Atlas 文件
+批量转换 Spine 文件脚本 (最终修复版)
+扫描指定目录下的所有子文件夹，将 Spine 1.9 JSON 转换为 3.8 格式
+并自动修复动画第一帧丢失的问题
 """
 
 import json
 import sys
 import re
 import struct
+import zipfile
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Union
-
 
 def calculate_bounds_from_skins(skins_data: Dict) -> Dict[str, float]:
     """从 skins 数据计算边界框"""
@@ -83,7 +85,10 @@ def convert_curve(curve_value: Any) -> Dict[str, Any]:
 
 
 def convert_timeline(timeline: List[Dict], timeline_type: str) -> List[Dict]:
-    """转换时间轴数据"""
+    """
+    转换时间轴数据
+    核心修复：确保第一帧始终存在，防止 Animation bounds are invalid
+    """
     if not timeline:
         return timeline
     
@@ -93,64 +98,53 @@ def convert_timeline(timeline: List[Dict], timeline_type: str) -> List[Dict]:
         is_first = (i == 0)
         cleaned = {}
         
-        # 时间
-        if 'time' in keyframe:
-            time_val = keyframe['time']
-            if time_val != 0 or not is_first:
-                cleaned['time'] = time_val
+        # 处理时间
+        time_val = keyframe.get('time', 0)
+        if time_val != 0:
+            cleaned['time'] = time_val
         
-        # 根据类型处理值
+        # 根据类型处理属性
+        has_val = False
         if timeline_type == 'rotate':
             if 'angle' in keyframe and keyframe['angle'] != 0:
                 cleaned['angle'] = keyframe['angle']
-        
+                has_val = True
         elif timeline_type == 'translate':
-            if 'x' in keyframe and keyframe['x'] != 0:
+            if keyframe.get('x', 0) != 0:
                 cleaned['x'] = keyframe['x']
-            if 'y' in keyframe and keyframe['y'] != 0:
+                has_val = True
+            if keyframe.get('y', 0) != 0:
                 cleaned['y'] = keyframe['y']
-        
+                has_val = True
         elif timeline_type == 'scale':
-            if 'x' in keyframe:
-                if keyframe['x'] != 1:
-                    cleaned['x'] = keyframe['x']
-            if 'y' in keyframe:
-                if keyframe['y'] != 1:
-                    cleaned['y'] = keyframe['y']
-        
+            if keyframe.get('x', 1) != 1:
+                cleaned['x'] = keyframe['x']
+                has_val = True
+            if keyframe.get('y', 1) != 1:
+                cleaned['y'] = keyframe['y']
+                has_val = True
         elif timeline_type in ['attachment', 'color']:
-            for key in ['name', 'color']:
-                if key in keyframe:
-                    cleaned[key] = keyframe[key]
+            if 'name' in keyframe:
+                cleaned['name'] = keyframe['name']
+                has_val = True
+            if 'color' in keyframe:
+                cleaned['color'] = keyframe['color']
+                has_val = True
         
-        # 处理曲线
+        # 处理曲线 (只有在不是最后一帧且有意义时添加)
         if 'curve' in keyframe:
             curve_data = convert_curve(keyframe['curve'])
             cleaned.update(curve_data)
         
-        if len(cleaned) > 0:
+        # 核心修复规则：
+        # 1. 如果是第一帧（time=0），必须保留，即使它是空的 {} （代表 setup pose）
+        # 2. 如果不是第一帧，只有在有内容时才保留
+        if is_first:
+            converted.append(cleaned)
+        elif len(cleaned) > 0:
             converted.append(cleaned)
     
     return converted
-
-
-def has_meaningful_changes(timeline: List[Dict], timeline_type: str) -> bool:
-    """检查时间轴是否有有意义的变化"""
-    if not timeline:
-        return False
-    
-    for frame in timeline:
-        if timeline_type == 'rotate':
-            if frame.get('angle', 0) != 0:
-                return True
-        elif timeline_type == 'translate':
-            if frame.get('x', 0) != 0 or frame.get('y', 0) != 0:
-                return True
-        elif timeline_type == 'scale':
-            if frame.get('x', 1) != 1 or frame.get('y', 1) != 1:
-                return True
-    
-    return False
 
 
 def convert_bone_animation(bone_data: Dict) -> Dict:
@@ -158,22 +152,19 @@ def convert_bone_animation(bone_data: Dict) -> Dict:
     converted = {}
     
     if 'rotate' in bone_data:
-        if has_meaningful_changes(bone_data['rotate'], 'rotate'):
-            converted_rotate = convert_timeline(bone_data['rotate'], 'rotate')
-            if converted_rotate:
-                converted['rotate'] = converted_rotate
+        converted_rotate = convert_timeline(bone_data['rotate'], 'rotate')
+        if converted_rotate:
+            converted['rotate'] = converted_rotate
     
     if 'translate' in bone_data:
-        if has_meaningful_changes(bone_data['translate'], 'translate'):
-            converted_translate = convert_timeline(bone_data['translate'], 'translate')
-            if converted_translate:
-                converted['translate'] = converted_translate
+        converted_translate = convert_timeline(bone_data['translate'], 'translate')
+        if converted_translate:
+            converted['translate'] = converted_translate
     
     if 'scale' in bone_data:
-        if has_meaningful_changes(bone_data['scale'], 'scale'):
-            converted_scale = convert_timeline(bone_data['scale'], 'scale')
-            if converted_scale:
-                converted['scale'] = converted_scale
+        converted_scale = convert_timeline(bone_data['scale'], 'scale')
+        if converted_scale:
+            converted['scale'] = converted_scale
     
     return converted
 
@@ -183,16 +174,14 @@ def convert_slot_animation(slot_data: Dict) -> Dict:
     converted = {}
     
     if 'attachment' in slot_data:
-        attachments = slot_data['attachment']
-        if len(attachments) > 1:
-            names = [a.get('name') for a in attachments]
-            if len(set(names)) > 1:
-                converted['attachment'] = attachments
+        converted_attachment = convert_timeline(slot_data['attachment'], 'attachment')
+        if converted_attachment:
+            converted['attachment'] = converted_attachment
     
     if 'color' in slot_data:
-        colors = slot_data['color']
-        if any(c.get('color') != 'ffffffff' for c in colors):
-            converted['color'] = colors
+        converted_color = convert_timeline(slot_data['color'], 'color')
+        if converted_color:
+            converted['color'] = converted_color
     
     return converted
 
@@ -231,6 +220,7 @@ def convert_animations(animations: Dict) -> Dict:
             ):
                 converted_anim['drawOrder'] = anim_data['draworder']
         
+        # 保留所有动画，即使是空的
         converted_animations[anim_name] = converted_anim
     
     return converted_animations
@@ -257,19 +247,12 @@ def convert_bones(bones: List[Dict]) -> List[Dict]:
     
     for bone in bones:
         new_bone = {}
-        
-        if 'name' in bone:
-            new_bone['name'] = bone['name']
-        if 'parent' in bone:
-            new_bone['parent'] = bone['parent']
-        if 'length' in bone:
-            new_bone['length'] = bone['length']
-        if 'rotation' in bone:
-            new_bone['rotation'] = bone['rotation']
-        if 'x' in bone:
-            new_bone['x'] = bone['x']
-        if 'y' in bone:
-            new_bone['y'] = bone['y']
+        if 'name' in bone: new_bone['name'] = bone['name']
+        if 'parent' in bone: new_bone['parent'] = bone['parent']
+        if 'length' in bone: new_bone['length'] = bone['length']
+        if 'rotation' in bone: new_bone['rotation'] = bone['rotation']
+        if 'x' in bone: new_bone['x'] = bone['x']
+        if 'y' in bone: new_bone['y'] = bone['y']
         
         for key in bone:
             if key not in new_bone:
@@ -294,25 +277,23 @@ def convert_spine_json(input_file: Path, output_file: Path) -> bool:
         with open(input_file, 'r', encoding='utf-8') as f:
             old_data = json.load(f)
         
-        # 检查是否已经是 3.8 格式
-        if is_spine_3_8(old_data):
-            print(f"  [跳过] {input_file.name} 已经是 3.8.75 格式")
-            return False
+        is_already_38 = is_spine_3_8(old_data)
         
         # 创建新的数据结构
         new_data = {}
         
-        # 1. 创建 skeleton 字段（自动计算边界）
-        bounds = calculate_bounds_from_skins(old_data.get('skins', {}))
+        # 1. 创建 skeleton 字段
+        bounds = calculate_bounds_from_skins(old_data.get('skins', {}) if not is_already_38 else {s['name']: s['attachments'] for s in old_data.get('skins', []) if 'name' in s})
+        
         skeleton = {
-            'hash': '',
+            'hash': old_data.get('skeleton', {}).get('hash', ''),
             'spine': '3.8.75',
-            'x': bounds['x'],
-            'y': bounds['y'],
-            'width': bounds['width'],
-            'height': bounds['height'],
-            'images': '',
-            'audio': ''
+            'x': bounds['x'] if bounds['width'] > 0 else old_data.get('skeleton', {}).get('x', 0),
+            'y': bounds['y'] if bounds['height'] > 0 else old_data.get('skeleton', {}).get('y', 0),
+            'width': bounds['width'] if bounds['width'] > 0 else old_data.get('skeleton', {}).get('width', 0),
+            'height': bounds['height'] if bounds['height'] > 0 else old_data.get('skeleton', {}).get('height', 0),
+            'images': old_data.get('skeleton', {}).get('images', ''),
+            'audio': old_data.get('skeleton', {}).get('audio', '')
         }
         
         new_data['skeleton'] = skeleton
@@ -330,59 +311,54 @@ def convert_spine_json(input_file: Path, output_file: Path) -> bool:
         if 'animations' in old_data:
             new_data['animations'] = convert_animations(old_data['animations'])
         
-        # 3. 如果输出文件已存在，先删除
+        # 3. 如果输出文件已存在，先删除（对比内容）
         if output_file.exists():
+            try:
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    existing_data = json.load(f)
+                if existing_data == new_data:
+                    return True
+            except:
+                pass
             output_file.unlink()
-            print(f"  [删除] 旧文件: {output_file.name}")
         
         # 4. 写入输出文件
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(new_data, f, ensure_ascii=False, separators=(',', ':'))
+            json.dump(new_data, f, ensure_ascii=False, indent=2)
         
+        action = "转换" if not is_already_38 else "同步"
+        print(f"  [{action}] {input_file.name} -> {output_file.name}")
         return True
         
     except Exception as e:
-        print(f"  [错误] 转换失败: {e}")
+        print(f"  [错误] 转换失败 {input_file.name}: {e}")
         return False
 
 
 def get_image_size(image_path: Path) -> tuple:
-    """获取PNG图片尺寸（不依赖PIL）"""
+    """获取图片尺寸"""
     try:
         with open(image_path, 'rb') as f:
-            # 检查PNG文件签名
-            header = f.read(8)
-            if header != b'\x89PNG\r\n\x1a\n':
-                return None
-            
-            # 读取IHDR块
-            # PNG格式：8字节签名 + 4字节长度 + 4字节类型(IHDR) + 数据
-            f.read(4)  # 跳过长度
-            chunk_type = f.read(4)
-            
-            if chunk_type != b'IHDR':
-                return None
-            
-            # IHDR数据：宽度(4字节) + 高度(4字节) + ...
-            width = struct.unpack('>I', f.read(4))[0]
-            height = struct.unpack('>I', f.read(4))[0]
-            
-            return (width, height)
-    except Exception:
-        return None
+            head = f.read(24)
+            if len(head) != 24: return None
+            if head.startswith(b'\x89PNG\r\n\x1a\n'):
+                w, h = struct.unpack('>LL', head[16:24])
+                return int(w), int(h)
+    except:
+        pass
+    return None
 
+import struct
 
 def process_atlas_file(atlas_file: Path) -> bool:
-    """处理 Atlas 文件，添加缺失的 size 信息"""
+    """处理 Atlas 文件，添加图片尺寸"""
     try:
         with open(atlas_file, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # 检查是否已经有 size 信息
         if re.search(r'^size:\s*\d+,\d+', content, re.MULTILINE):
-            return False  # 已经有 size 信息
+            return False
         
-        # 查找 PNG 文件引用
         png_match = re.search(r'^(.+\.png)\s*$', content, re.MULTILINE)
         if not png_match:
             return False
@@ -394,35 +370,28 @@ def process_atlas_file(atlas_file: Path) -> bool:
             print(f"  [警告] 找不到图片文件: {png_filename}")
             return False
         
-        # 获取图片尺寸
         size = get_image_size(png_path)
         if not size:
-            print(f"  [警告] 无法读取图片尺寸: {png_filename}")
             return False
         
         width, height = size
-        
-        # 在 PNG 文件名后添加 size 信息
         lines = content.split('\n')
         new_lines = []
         
-        for i, line in enumerate(lines):
+        for line in lines:
             new_lines.append(line)
-            # 如果这行是 PNG 文件名，下一行添加 size
             if line.strip() == png_filename:
                 new_lines.append(f'size: {width},{height}')
         
         new_content = '\n'.join(new_lines)
-        
-        # 写入文件
         with open(atlas_file, 'w', encoding='utf-8') as f:
             f.write(new_content)
         
-        print(f"  [成功] 添加 size 信息: {width}x{height}")
+        print(f"  [Atlas] 添加 size: {width}x{height}")
         return True
         
     except Exception as e:
-        print(f"  [错误] 处理 Atlas 文件失败: {e}")
+        print(f"  [错误] Atlas失败: {e}")
         return False
 
 
@@ -436,27 +405,28 @@ def scan_and_convert(root_dir: Path):
     json_errors = 0
     atlas_processed = 0
     
-    # 遍历所有子目录
-    subdirs = [d for d in root_dir.iterdir() if d.is_dir()]
-    total_dirs = len(subdirs)
+    dirs_to_process = [root_dir] + [d for d in root_dir.iterdir() if d.is_dir()]
+    total_dirs = len(dirs_to_process)
     
-    print(f"找到 {total_dirs} 个子目录\n")
+    print(f"找到 {total_dirs} 个目录（含根目录）\n")
     
-    for idx, subdir in enumerate(subdirs, 1):
-        print(f"[{idx}/{total_dirs}] 处理目录: {subdir.name}")
+    for idx, subdir in enumerate(dirs_to_process, 1):
+        try:
+            rel_path = subdir.relative_to(root_dir.parent)
+        except:
+            rel_path = subdir.name
+            
+        print(f"[{idx}/{total_dirs}] 处理目录: {rel_path}")
         
         # 查找 JSON 文件
         json_files = list(subdir.glob('*.json'))
         
         for json_file in json_files:
-            # 跳过已经是 _v38 的文件
-            if '_v38' in json_file.stem:
+            if json_file.stem.endswith('_v38'):
                 continue
             
-            # 生成输出文件名
             output_file = json_file.parent / f"{json_file.stem}_v38.json"
-            
-            print(f"  转换: {json_file.name} -> {output_file.name}")
+            print(f"  检查: {json_file.name}")
             
             if convert_spine_json(json_file, output_file):
                 json_converted += 1
@@ -466,56 +436,84 @@ def scan_and_convert(root_dir: Path):
         # 处理 Atlas 文件
         atlas_files = list(subdir.glob('*.atlas'))
         for atlas_file in atlas_files:
-            # 跳过 _v38 的 atlas 文件
-            if '_v38' in atlas_file.stem:
+            if atlas_file.stem.endswith('_v38'):
                 continue
             
-            print(f"  检查 Atlas: {atlas_file.name}")
             if process_atlas_file(atlas_file):
                 atlas_processed += 1
         
         print()
     
-    # 输出统计
     print("=" * 80)
     print("转换完成！")
-    print(f"\nJSON 文件:")
-    print(f"  转换: {json_converted} 个")
-    print(f"  跳过: {json_skipped} 个")
-    if json_errors > 0:
-        print(f"  错误: {json_errors} 个")
+    print(f"JSON 转换/同步: {json_converted} 个")
+    print(f"Atlas 处理: {atlas_processed} 个")
     
-    print(f"\nAtlas 文件:")
-    print(f"  处理: {atlas_processed} 个")
-
-
-def main():
-    """主函数"""
-    if len(sys.argv) < 2:
-        print("用法: python batch_convert_spine_directory.py <目录路径>")
-        print("\n示例:")
-        print("  python batch_convert_spine_directory.py D:\\petZoom\\spine-role")
-        return
+    # ---------------------------------------------------------
+    # 压缩处理逻辑 (恢复)
+    # ---------------------------------------------------------
+    print("\n" + "=" * 80)
+    print("开始压缩处理...")
     
-    root_dir = Path(sys.argv[1])
-    
-    if not root_dir.exists():
-        print(f"错误: 目录不存在: {root_dir}")
-        return
-    
-    if not root_dir.is_dir():
-        print(f"错误: 不是目录: {root_dir}")
-        return
+    # ---------------------------------------------------------
+    # 压缩处理逻辑 (修正版: 打包整个 root_dir)
+    # ---------------------------------------------------------
+    print("\n" + "=" * 80)
+    print("开始压缩处理...")
     
     try:
-        scan_and_convert(root_dir)
-    except KeyboardInterrupt:
-        print("\n\n用户中断")
+        # root_dir 是 D:\petZoom\spine-role
+        # parent_dir 是 D:\petZoom
+        parent_dir = root_dir.parent
+        zip_name = f"{root_dir.name}.zip"
+        zip_path = parent_dir / zip_name
+        
+        print(f"目标压缩包: {zip_path}")
+        
+        # 1. 删除旧的压缩包
+        import time
+        if zip_path.exists():
+            print(f"  [清理] 准备删除旧文件: {zip_path.resolve()}")
+            for i in range(3):
+                try:
+                    if zip_path.exists():
+                        zip_path.unlink()
+                        print(f"  [删除] 旧压缩包已删除")
+                    break
+                except Exception as e:
+                    print(f"  [警告] 删除失败 (第{i+1}次): {e}")
+                    time.sleep(1) # 等待1秒
+            
+            # 如果还是存在，说明被占用了
+            if zip_path.exists():
+                print("  [严重警告] 无法删除旧压缩包，尝试直接覆盖...")
+        
+        # 2. 创建新的压缩包 (将整个 root_dir 打包进去)
+        print(f"  [打包] 正在压缩整个文件夹: {root_dir.name} ...")
+        
+        file_count = 0
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # 遍历 root_dir 下的所有文件
+            for file_path in root_dir.rglob('*'):
+                if file_path.is_file():
+                    # 计算在 zip 中的相对路径
+                    # 例如: D:\petZoom\spine-role\sub\a.json -> spine-role\sub\a.json
+                    arcname = file_path.relative_to(parent_dir)
+                    zf.write(file_path, arcname)
+                    file_count += 1
+        
+        print(f"  [成功] 生成压缩包: {zip_path}")
+        print(f"  包含文件数: {file_count}")
+        
     except Exception as e:
-        print(f"\n错误: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"  [错误] 整体打包失败: {e}")
+
+    print("\n" + "=" * 80)
+    print("全部流程完成！")
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) < 2:
+        print("请提供目标目录路径")
+    else:
+        scan_and_convert(Path(sys.argv[1]))
