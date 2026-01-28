@@ -136,7 +136,7 @@ export function useSpinePlayer(
               atlasUrl,
             });
 
-            const animation = "attack1a";
+            const animation = "idle2";
 
             // 智能选择动画：优先使用指定动画，否则使用第一个可用动画
             if (playerRef.current?.skeleton?.data?.animations) {
@@ -152,7 +152,7 @@ export function useSpinePlayer(
 
               const targetAnimation = animations.includes(animation)
                 ? animation
-                : animations[0];
+                : animations[1];
 
               console.log("targetAnimation", targetAnimation);
 
