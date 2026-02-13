@@ -1,0 +1,166 @@
+/* ==================== AnimatedPet 容器 ==================== */
+.animated-pet-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+/* ==================== 宠物图片 ==================== */
+.animated-pet-img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
+  image-rendering: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  cursor: pointer;
+  /* 默认用 will-change 提升到 GPU 合成层 */
+  will-change: transform, filter;
+}
+
+/* ==================== 地面阴影 ==================== */
+.animated-pet-shadow {
+  position: absolute;
+  bottom: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 12px;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(6px);
+  animation: pet-shadow-breathe 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pet-shadow-breathe {
+  0%,
+  100% {
+    width: 60%;
+    opacity: 0.35;
+  }
+  50% {
+    width: 50%;
+    opacity: 0.2;
+  }
+}
+
+/* ==================== 粒子层 ==================== */
+.animated-pet-particles {
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.animated-pet-particle {
+  position: absolute;
+  font-size: 20px;
+  will-change: transform, opacity;
+}
+
+/* ==================== 占位符 ==================== */
+.animated-pet-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.animated-pet-placeholder .pet-emoji {
+  font-size: 64px;
+  animation: placeholder-pulse 2s ease-in-out infinite;
+}
+
+@keyframes placeholder-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* ==================== 加载状态 ==================== */
+.animated-pet-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.animated-pet-loading .pet-emoji {
+  font-size: 48px;
+  animation: loading-bounce 1s ease-in-out infinite;
+}
+
+@keyframes loading-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ==================== 光晕效果 ==================== */
+.animated-pet-glow {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 40px;
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.4;
+  pointer-events: none;
+  transition: all 0.5s ease;
+}
+
+.animated-pet-glow.glow-idle {
+  background: rgba(138, 43, 226, 0.4);
+}
+
+.animated-pet-glow.glow-feed {
+  background: rgba(255, 149, 0, 0.6);
+  opacity: 0.6;
+  width: 140px;
+}
+
+.animated-pet-glow.glow-play {
+  background: rgba(255, 45, 85, 0.6);
+  opacity: 0.6;
+  width: 140px;
+}
+
+.animated-pet-glow.glow-touch {
+  background: rgba(175, 82, 222, 0.6);
+  opacity: 0.6;
+  width: 140px;
+}
+
+.animated-pet-glow.glow-sleep {
+  background: rgba(72, 219, 251, 0.3);
+  opacity: 0.3;
+  width: 100px;
+}
+
+.animated-pet-glow.glow-evolve {
+  background: rgba(255, 215, 0, 0.8);
+  opacity: 0.8;
+  width: 180px;
+  height: 60px;
+}

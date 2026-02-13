@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PNG 宠物动画演示</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        font-family: "Segoe UI", sans-serif;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+        background: linear-gradient(90deg, #ff6b6b, #ffa500, #48dbfb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .subtitle {
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
+
+      .demo-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 30px;
+        max-width: 700px;
+        width: 100%;
+      }
+
+      .demo-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 30px 20px 20px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .demo-card h3 {
+        font-size: 16px;
+        margin-bottom: 6px;
+        color: #48dbfb;
+      }
+
+      .demo-card .desc {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 16px;
+      }
+
+      .pet-wrapper {
+        width: 160px;
+        height: 160px;
+        margin: 0 auto;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .pet-img {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4));
+        image-rendering: auto;
+      }
+
+      /* ==================== 1. 呼吸/浮动 ==================== */
+      .anim-idle .pet-img {
+        animation: idle-float 3s ease-in-out infinite;
+      }
+
+      @keyframes idle-float {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+        50% {
+          transform: translateY(-12px) scale(1.02);
+        }
+      }
+
+      .anim-idle .pet-wrapper::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 16px;
+        background: radial-gradient(ellipse, rgba(0, 0, 0, 0.3), transparent);
+        border-radius: 50%;
+        animation: shadow-pulse 3s ease-in-out infinite;
+      }
+
+      @keyframes shadow-pulse {
+        0%,
+        100% {
+          width: 80px;
+          opacity: 0.4;
+        }
+        50% {
+          width: 60px;
+          opacity: 0.2;
+        }
+      }
+
+      /* ==================== 2. 喂食弹跳 ==================== */
+      .anim-feed .pet-img {
+        animation: feed-bounce 0.6s ease infinite;
+      }
+
+      @keyframes feed-bounce {
+        0%,
+        100% {
+          transform: translateY(0) scale(1, 1);
+        }
+        30% {
+          transform: translateY(-20px) scale(0.95, 1.05);
+        }
+        50% {
+          transform: translateY(0) scale(1.08, 0.92);
+        }
+        70% {
+          transform: translateY(-8px) scale(0.98, 1.02);
+        }
+      }
+
+      /* 食物粒子 */
+      .food-particle {
+        position: absolute;
+        font-size: 20px;
+        animation: food-fly 1.5s ease-out infinite;
+        opacity: 0;
+      }
+      .food-particle:nth-child(2) {
+        left: 20%;
+        top: 30%;
+        animation-delay: 0s;
+      }
+      .food-particle:nth-child(3) {
+        right: 20%;
+        top: 20%;
+        animation-delay: 0.3s;
+      }
+      .food-particle:nth-child(4) {
+        left: 30%;
+        top: 10%;
+        animation-delay: 0.6s;
+      }
+      .food-particle:nth-child(5) {
+        right: 30%;
+        top: 40%;
+        animation-delay: 0.9s;
+      }
+
+      @keyframes food-fly {
+        0% {
+          transform: translateY(30px) scale(0);
+          opacity: 0;
+        }
+        30% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        100% {
+          transform: translateY(-40px) scale(0.5);
+          opacity: 0;
+        }
+      }
+
+      /* ==================== 3. 玩耍跳动 ==================== */
+      .anim-play .pet-img {
+        animation: play-jump 1s ease-in-out infinite;
+      }
+
+      @keyframes play-jump {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0deg);
+        }
+        25% {
+          transform: translateY(-25px) rotate(-8deg);
+        }
+        50% {
+          transform: translateY(0) rotate(0deg);
+        }
+        75% {
+          transform: translateY(-25px) rotate(8deg);
+        }
+      }
+
+      /* 星星粒子 */
+      .star-particle {
+        position: absolute;
+        font-size: 16px;
+        opacity: 0;
+      }
+      .star-particle:nth-child(2) {
+        left: 10%;
+        top: 20%;
+        animation: star-pop 1.2s ease-out 0s infinite;
+      }
+      .star-particle:nth-child(3) {
+        right: 10%;
+        top: 15%;
+        animation: star-pop 1.2s ease-out 0.2s infinite;
+      }
+      .star-particle:nth-child(4) {
+        left: 5%;
+        bottom: 30%;
+        animation: star-pop 1.2s ease-out 0.4s infinite;
+      }
+      .star-particle:nth-child(5) {
+        right: 5%;
+        bottom: 25%;
+        animation: star-pop 1.2s ease-out 0.6s infinite;
+      }
+      .star-particle:nth-child(6) {
+        left: 50%;
+        top: 5%;
+        animation: star-pop 1.2s ease-out 0.8s infinite;
+      }
+
+      @keyframes star-pop {
+        0% {
+          transform: scale(0) rotate(0deg);
+          opacity: 0;
+        }
+        40% {
+          transform: scale(1.2) rotate(180deg);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(0) rotate(360deg) translateY(-20px);
+          opacity: 0;
+        }
+      }
+
+      /* ==================== 4. 抚摸摇晃 ==================== */
+      .anim-touch .pet-img {
+        animation: touch-wobble 0.5s ease-in-out infinite;
+      }
+
+      @keyframes touch-wobble {
+        0%,
+        100% {
+          transform: rotate(0deg) scale(1);
+        }
+        25% {
+          transform: rotate(-5deg) scale(1.05);
+        }
+        75% {
+          transform: rotate(5deg) scale(1.05);
+        }
+      }
+
+      /* 爱心粒子 */
+      .heart-particle {
+        position: absolute;
+        font-size: 18px;
+        opacity: 0;
+      }
+      .heart-particle:nth-child(2) {
+        left: 15%;
+        top: 10%;
+        animation: heart-float 1.8s ease-out 0s infinite;
+      }
+      .heart-particle:nth-child(3) {
+        right: 15%;
+        top: 5%;
+        animation: heart-float 1.8s ease-out 0.3s infinite;
+      }
+      .heart-particle:nth-child(4) {
+        left: 25%;
+        top: 0%;
+        animation: heart-float 1.8s ease-out 0.6s infinite;
+      }
+      .heart-particle:nth-child(5) {
+        right: 25%;
+        top: 15%;
+        animation: heart-float 1.8s ease-out 0.9s infinite;
+      }
+      .heart-particle:nth-child(6) {
+        left: 40%;
+        top: -5%;
+        animation: heart-float 1.8s ease-out 1.2s infinite;
+      }
+
+      @keyframes heart-float {
+        0% {
+          transform: translateY(20px) scale(0);
+          opacity: 0;
+        }
+        30% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        100% {
+          transform: translateY(-50px) scale(0.6);
+          opacity: 0;
+        }
+      }
+
+      /* ==================== 底部光晕 ==================== */
+      .glow {
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 30px;
+        border-radius: 50%;
+        filter: blur(15px);
+        opacity: 0.5;
+      }
+
+      .glow-blue {
+        background: #48dbfb;
+      }
+      .glow-orange {
+        background: #ffa500;
+      }
+      .glow-pink {
+        background: #ff6b81;
+      }
+      .glow-purple {
+        background: #a29bfe;
+      }
+
+      /* ==================== 进化特效区域 ==================== */
+      .evolution-section {
+        max-width: 700px;
+        width: 100%;
+        margin-top: 40px;
+      }
+
+      .evolution-section h2 {
+        text-align: center;
+        font-size: 22px;
+        margin-bottom: 20px;
+        color: #ffa500;
+      }
+
+      .evo-demo {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 30px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .evo-stage {
+        text-align: center;
+        position: relative;
+      }
+
+      .evo-stage img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+        animation: idle-float 3s ease-in-out infinite;
+        filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
+      }
+
+      .evo-stage .stage-label {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 8px;
+      }
+
+      .evo-arrow {
+        font-size: 30px;
+        color: #ffa500;
+        animation: arrow-pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes arrow-pulse {
+        0%,
+        100% {
+          opacity: 0.4;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.2);
+        }
+      }
+
+      /* 进化闪光 */
+      .evo-stage.evolving img {
+        animation: evolve-glow 2s ease-in-out infinite;
+      }
+
+      @keyframes evolve-glow {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 5px rgba(255, 165, 0, 0.3)) brightness(1);
+          transform: scale(1);
+        }
+        50% {
+          filter: drop-shadow(0 0 25px rgba(255, 165, 0, 0.8)) brightness(1.3);
+          transform: scale(1.08);
+        }
+      }
+
+      .btn-row {
+        margin-top: 30px;
+        text-align: center;
+      }
+
+      .btn-row button {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 12px;
+        font-size: 14px;
+        cursor: pointer;
+        margin: 0 6px;
+        transition: all 0.3s;
+        font-weight: 600;
+      }
+
+      .btn-row button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .btn-feed {
+        background: linear-gradient(135deg, #ff9500, #ff7a00);
+        color: #fff;
+      }
+      .btn-play {
+        background: linear-gradient(135deg, #ff2d55, #ff1744);
+        color: #fff;
+      }
+      .btn-touch {
+        background: linear-gradient(135deg, #af52de, #9c27b0);
+        color: #fff;
+      }
+      .btn-idle {
+        background: linear-gradient(135deg, #48dbfb, #007aff);
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🎨 PNG 宠物动画演示</h1>
+    <p class="subtitle">看！一张静态 PNG 加上 CSS 动画后有多生动 ✨</p>
+
+    <div class="demo-grid">
+      <!-- 1. 呼吸浮动 -->
+      <div class="demo-card">
+        <h3>🫁 呼吸浮动</h3>
+        <div class="desc">待机状态 - 宠物轻轻上下浮动</div>
+        <div class="pet-wrapper anim-idle">
+          <img
+            class="pet-img"
+            src="http://localhost:8011/api/static/mon_acorn_girl_02/mon_acorn_girl_02.png"
+            onerror="
+              this.src =
+                'data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><text y=&quot;50%&quot; x=&quot;50%&quot; dominant-baseline=&quot;middle&quot; text-anchor=&quot;middle&quot; font-size=&quot;60&quot;>🐲</text></svg>'
+            "
+          />
+          <div class="glow glow-blue"></div>
+        </div>
+      </div>
+
+      <!-- 2. 喂食弹跳 -->
+      <div class="demo-card">
+        <h3>🍖 喂食反应</h3>
+        <div class="desc">弹跳 + 食物粒子</div>
+        <div class="pet-wrapper anim-feed">
+          <img
+            class="pet-img"
+            src="http://localhost:8011/api/static/mon_acorn_girl_02/mon_acorn_girl_02.png"
+            onerror="
+              this.src =
+                'data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><text y=&quot;50%&quot; x=&quot;50%&quot; dominant-baseline=&quot;middle&quot; text-anchor=&quot;middle&quot; font-size=&quot;60&quot;>🐲</text></svg>'
+            "
+          />
+          <span class="food-particle">🍖</span>
+          <span class="food-particle">🍗</span>
+          <span class="food-particle">🍰</span>
+          <span class="food-particle">⭐</span>
+          <div class="glow glow-orange"></div>
+        </div>
+      </div>
+
+      <!-- 3. 玩耍跳动 -->
+      <div class="demo-card">
+        <h3>🎮 玩耍跳动</h3>
+        <div class="desc">左右交替跳跃 + 星星粒子</div>
+        <div class="pet-wrapper anim-play">
+          <img
+            class="pet-img"
+            src="http://localhost:8011/api/static/mon_acorn_girl_02/mon_acorn_girl_02.png"
+            onerror="
+              this.src =
+                'data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><text y=&quot;50%&quot; x=&quot;50%&quot; dominant-baseline=&quot;middle&quot; text-anchor=&quot;middle&quot; font-size=&quot;60&quot;>🐲</text></svg>'
+            "
+          />
+          <span class="star-particle">✨</span>
+          <span class="star-particle">⭐</span>
+          <span class="star-particle">💫</span>
+          <span class="star-particle">🌟</span>
+          <span class="star-particle">✨</span>
+          <div class="glow glow-pink"></div>
+        </div>
+      </div>
+
+      <!-- 4. 抚摸摇晃 -->
+      <div class="demo-card">
+        <h3>💕 抚摸摇晃</h3>
+        <div class="desc">左右摇晃 + 爱心飘出</div>
+        <div class="pet-wrapper anim-touch">
+          <img
+            class="pet-img"
+            src="http://localhost:8011/api/static/mon_acorn_girl_02/mon_acorn_girl_02.png"
+            onerror="
+              this.src =
+                'data:image/svg+xml,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; viewBox=&quot;0 0 100 100&quot;><text y=&quot;50%&quot; x=&quot;50%&quot; dominant-baseline=&quot;middle&quot; text-anchor=&quot;middle&quot; font-size=&quot;60&quot;>🐲</text></svg>'
+            "
+          />
+          <span class="heart-particle">💕</span>
+          <span class="heart-particle">❤️</span>
+          <span class="heart-particle">💗</span>
+          <span class="heart-particle">💖</span>
+          <span class="heart-particle">💝</span>
+          <div class="glow glow-purple"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 进化演示 -->
+    <div class="evolution-section">
+      <h2>🔥 进化过渡效果</h2>
+      <div class="evo-demo">
+        <div class="evo-stage">
+          <img
+            src="http://localhost:8011/api/static/mon_earth_dragon_01/mon_earth_dragon_01.png"
+            onerror="this.textContent = '🥚'"
+          />
+          <div class="stage-label">幼兽期</div>
+        </div>
+        <div class="evo-arrow">▸</div>
+        <div class="evo-stage evolving">
+          <img
+            src="http://localhost:8011/api/static/mon_earth_dragon_02/mon_earth_dragon_02.png"
+            onerror="this.textContent = '🐣'"
+          />
+          <div class="stage-label">成长期</div>
+        </div>
+        <div class="evo-arrow">▸</div>
+        <div class="evo-stage">
+          <img
+            src="http://localhost:8011/api/static/mon_earth_dragon_03/mon_earth_dragon_03.png"
+            onerror="this.textContent = '🐲'"
+          />
+          <div class="stage-label">成年期</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <p
+        style="
+          margin-bottom: 14px;
+          color: rgba(255, 255, 255, 0.5);
+          font-size: 13px;
+        "
+      >
+        ☝ 以上所有动画效果都是用 <strong>同一张 PNG 静态图片</strong> +
+        <strong>CSS 动画</strong> 实现的！
+      </p>
+    </div>
+  </body>
+</html>

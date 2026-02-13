@@ -19,19 +19,21 @@ export function useSpineResources(
   return useMemo(() => {
     if (!pet?.spinePath) return { jsonUrl: null, atlasUrl: null };
 
-    pet.spinePath = "mon_bat_demon_02/mon_bat_demon_02";
-    // pet.spinePath = "mon_earth_dragon_01/mon_earth_dragon_01";
+    pet.spinePath = "mon_acorn_girl_03/mon_acorn_girl_03";
+
     const config = getEnvironmentConfig(environment);
     const baseUrl = config.staticBaseUrl.replace(/\/$/, "");
 
     const rawPath = pet.spinePath.startsWith("/")
       ? pet.spinePath
       : `/${pet.spinePath}`;
+
     const fullPath = `${baseUrl}${rawPath}`;
 
     return {
-      jsonUrl: `${fullPath}_v38.json`,
+      jsonUrl: `${fullPath}.json`,
       atlasUrl: `${fullPath}.atlas`,
+      imageName: `${fullPath}.png`,
     };
   }, [pet?.spinePath, environment]);
 }
@@ -40,18 +42,19 @@ export function useSpineResources(
  * Hook: 管理 Spine Player 的加载、初始化和销毁
  */
 export function useSpinePlayer(
-  containerRef: React.RefObject<HTMLDivElement>,
+  container: HTMLDivElement | null,
   jsonUrl: string | null,
   atlasUrl: string | null,
 ) {
   const playerRef = useRef<any>(null);
+  const prevUrlRef = useRef<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 加载 Spine 库和初始化 Player
   useEffect(() => {
-    if (!jsonUrl || !atlasUrl || !containerRef.current) {
-      console.log("useSpinePlayer", jsonUrl, atlasUrl, containerRef);
+    if (!jsonUrl || !atlasUrl || !container) {
+      console.log("useSpinePlayer", jsonUrl, atlasUrl, container);
       if (!jsonUrl) {
         setIsLoading(false);
       }
@@ -63,15 +66,16 @@ export function useSpinePlayer(
       setError(null);
 
       try {
-        // 动态加载 spine-player 库（如果尚未加载）
         if (!(window as any).spine) {
           const script = document.createElement("script");
-          script.src = "/spine-player.js";
+          script.src =
+            "https://unpkg.com/@esotericsoftware/spine-player@4.2.45/dist/iife/spine-player.js";
           script.async = true;
 
           const link = document.createElement("link");
           link.rel = "stylesheet";
-          link.href = "/spine-player.css";
+          link.href =
+            "https://unpkg.com/@esotericsoftware/spine-player@4.2.45/dist/spine-player.css";
 
           document.head.appendChild(link);
           document.head.appendChild(script);
@@ -79,95 +83,115 @@ export function useSpinePlayer(
           await new Promise<void>((resolve, reject) => {
             script.onload = () => resolve();
             script.onerror = () =>
-              reject(
-                new Error(
-                  "Failed to load spine-player.js (check /spine-player.js is reachable)",
-                ),
-              );
-            // 超时保护
+              reject(new Error("Failed to load Spine 4.2"));
             setTimeout(
-              () =>
-                reject(
-                  new Error(
-                    "Spine player load timeout (check /spine-player.js is reachable)",
-                  ),
-                ),
-              15000,
+              () => reject(new Error("Timeout loading Spine 4.2")),
+              20000,
             );
           });
         }
 
-        if (!containerRef.current) return;
-
         const spine = (window as any).spine;
 
-        // 清空容器
-        containerRef.current.innerHTML = "";
+        if (!container) return;
+        container.innerHTML = "";
         const playerDiv = document.createElement("div");
         playerDiv.style.width = "100%";
         playerDiv.style.height = "100%";
-        containerRef.current.appendChild(playerDiv);
+        container.appendChild(playerDiv);
 
-        // 清理旧的 player
         if (playerRef.current) {
           try {
-            playerRef.current.dispose();
-          } catch (e) {
-            console.warn("清理旧 player 失败:", e);
-          }
+            if (typeof playerRef.current.dispose === "function")
+              playerRef.current.dispose();
+          } catch (e) {}
         }
 
-        // 创建新的 SpinePlayer
-        // 注意：不在初始化时传入 animation，避免动画不存在时报错
+        // ----------------------------------------------------------------
+        // 🕵️‍ Debug 模式全开：为了找到那个隐形的宠物！
+        // ----------------------------------------------------------------
         playerRef.current = new spine.SpinePlayer(playerDiv, {
           jsonUrl,
           atlasUrl,
-          // animation, // 移除这里，在 success 回调中设置
           premultipliedAlpha: true,
-          backgroundColor: "#00000000",
+
+          // 1. 背景设为灰色，确保 Canvas 真的渲染了
+          backgroundColor: "#aaaaaa",
+
           alpha: true,
-          showControls: false,
-          preserveDrawingBuffer: false,
-          success: () => {
+          showControls: true,
+          preserveDrawingBuffer: true,
+
+          // 2. 开启 Debug 渲染：画骨头、画边界
+          debug: {
+            bones: true,
+            regions: true,
+            mesh: true,
+            bounds: true,
+            paths: true,
+            clipping: true,
+          },
+
+          // 3. 核心避坑配置
+          fitToCanvas: false,
+
+          // 4. 超级广角视口：覆盖 (-1500, -1500) 到 (1500, 1500)
+          // 强制以 (0,0) 为中心
+          viewport: {
+            x: -1500,
+            y: -1500,
+            width: 3000,
+            height: 3000,
+            padLeft: "0%",
+            padRight: "0%",
+            padTop: "0%",
+            padBottom: "0%",
+          },
+
+          success: (p: any) => {
             setIsLoading(false);
-            setError(null);
-            console.log("✅ Spine 加载成功！", {
-              jsonUrl,
-              atlasUrl,
-            });
 
-            const animation = "idle2";
+            try {
+              const state = p.animationState;
+              const skeleton = p.skeleton;
 
-            // 智能选择动画：优先使用指定动画，否则使用第一个可用动画
-            if (playerRef.current?.skeleton?.data?.animations) {
-              const animations = playerRef.current.skeleton.data.animations.map(
-                (anim: any) => anim.name,
+              // 物理补丁
+              if (!skeleton.physics) skeleton.physics = [];
+
+              // 强制重置姿态
+              // skeleton.setToSetupPose();
+
+              console.log("🦴 Skeleton Data:", {
+                x: skeleton.data.x,
+                y: skeleton.data.y,
+                width: skeleton.data.width,
+                height: skeleton.data.height,
+              });
+
+              // 启动动画
+              const animations = p.skeleton.data.animations.map(
+                (a: any) => a.name,
               );
-
-              console.log("📋 可用动画列表:", animations);
-
-              if (animations.length === 0) {
-                return;
+              const targetAnim = animations.includes("idle2")
+                ? "idle2"
+                : animations[0];
+              if (targetAnim) {
+                state.setAnimation(0, targetAnim, true);
+                console.log(`🚀 Animated via State: ${targetAnim}`);
               }
-
-              const targetAnimation = animations.includes(animation)
-                ? animation
-                : animations[1];
-
-              console.log("targetAnimation", targetAnimation);
-
-              playerRef.current.setAnimation(targetAnimation, true);
+            } catch (e) {
+              console.error("❌ Spine setup failed:", e);
             }
           },
-          error: (_: any, msg: string) => {
+          error: (p: any, msg: string) => {
             setIsLoading(false);
-            setError(msg);
+            console.error("❌ Spine Error:", msg);
+            setError(`Spine Error: ${msg}`);
           },
         });
       } catch (e: any) {
         setIsLoading(false);
-        const errorMsg = e?.message || "未知错误";
-        setError(errorMsg);
+        setError(e.message || "Unknown error");
       }
     };
 
@@ -176,14 +200,19 @@ export function useSpinePlayer(
     return () => {
       if (playerRef.current) {
         try {
-          playerRef.current.dispose();
+          // 兼容性清理：有些版本可能是 dispose，有些可能是 destroy
+          if (typeof playerRef.current.dispose === "function") {
+            playerRef.current.dispose();
+          } else if (typeof playerRef.current.destroy === "function") {
+            playerRef.current.destroy();
+          }
         } catch (e) {
           console.warn("清理 player 失败:", e);
         }
         playerRef.current = null;
       }
     };
-  }, [jsonUrl, atlasUrl]); // 只在 URL 变化时重新加载
+  }, [jsonUrl, atlasUrl, container]);
 
   return { isLoading, error };
 }

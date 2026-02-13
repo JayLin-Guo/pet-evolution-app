@@ -4,12 +4,13 @@ import {
   IsInt,
   MinLength,
   MaxLength,
+  IsOptional,
 } from 'class-validator';
 
 export class AdoptPetDto {
   @IsInt()
-  @IsNotEmpty()
-  pet_egg_id: number;
+  @IsOptional()
+  species_id?: number;
 
   @IsString()
   @IsNotEmpty()

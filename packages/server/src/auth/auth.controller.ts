@@ -15,6 +15,11 @@ import { AuthGuard } from './auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Get('captcha')
+  async getCaptcha() {
+    return this.authService.generateCaptcha();
+  }
+
   @Post('register')
   async register(
     @Body() registerDto: RegisterDto,

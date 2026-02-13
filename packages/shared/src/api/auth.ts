@@ -1,5 +1,5 @@
-import { request } from './request';
-import { setAuthToken, clearAuthToken, getAuthToken } from './config';
+import { request } from "./request";
+import { setAuthToken, clearAuthToken, getAuthToken } from "./config";
 
 export interface AuthResponse {
   token: string;
@@ -14,14 +14,30 @@ export interface UserInfo {
 
 export const authApi = {
   /**
+  /**
+   * 获取图形验证码
+   */
+  getCaptcha: async (): Promise<{ captchaId: string; svg: string }> => {
+    return await request<{ captchaId: string; svg: string }>(
+      "/api/auth/captcha",
+    );
+  },
+
+  /**
    * 手机号注册/登录
    */
   login: async (
     phoneNumber: string,
+    captchaId: string,
+    captchaCode: string,
   ): Promise<{ token: string; userId: number }> => {
-    const response = await request<AuthResponse>('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ phone: phoneNumber }),
+    const response = await request<AuthResponse>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        phone: phoneNumber,
+        captchaId,
+        captchaCode,
+      }),
     });
 
     // 保存token
@@ -42,7 +58,7 @@ export const authApi = {
         valid: boolean;
         userId?: number;
         phone?: string;
-      }>('/api/auth/verify');
+      }>("/api/auth/verify");
 
       if (response.valid && response.userId && response.phone) {
         return {

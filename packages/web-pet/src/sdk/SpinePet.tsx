@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useState, useCallback } from "react";
 import { type Pet, PetAnimation } from "@pet-evolution/shared";
 import { type Environment } from "./config";
 import { useSpinePlayer, useSpineResources } from "./hooks/useSpine";
@@ -30,13 +30,19 @@ export function SpinePet({
 
   pet,
 }: SpinePetProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Use callback ref to detect when container is mounted
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      setContainer(node);
+    }
+  }, []);
 
   // 1. 获取资源 URL
   const { jsonUrl, atlasUrl } = useSpineResources(pet, environment);
 
   // 2. 初始化 Player 并管理生命周期
-  const { isLoading, error } = useSpinePlayer(containerRef, jsonUrl, atlasUrl);
+  const { isLoading, error } = useSpinePlayer(container, jsonUrl, atlasUrl);
 
   // 如果没有 jsonUrl (即没有 pet.spinePath)，显示占位符
   if (!jsonUrl) {
@@ -55,12 +61,12 @@ export function SpinePet({
         style={{
           width: "100%",
           height: "100%",
-          backgroundColor: "transparent",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          // 在加载中或出错时隐藏容器内容，避免视觉干扰
-          visibility: isLoading || error ? "hidden" : "visible",
+          // backgroundColor: "transparent",
+          // display: "flex",
+          // justifyContent: "center",
+          // alignItems: "center",
+          // // 在加载中或出错时隐藏容器内容，避免视觉干扰
+          // visibility: isLoading || error ? "hidden" : "visible",
         }}
       />
 

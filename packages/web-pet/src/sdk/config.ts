@@ -6,6 +6,8 @@ export type Environment = "test" | "product" | "dev";
 export interface EnvironmentConfig {
   /** 静态资源基础 URL（不包含具体资源路径） */
   staticBaseUrl: string;
+  /** 宠物独立 PNG 图片的基础 URL */
+  petImgBaseUrl: string;
 }
 
 /**
@@ -13,18 +15,19 @@ export interface EnvironmentConfig {
  */
 const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
   test: {
-    // 测试环境：使用后端API从zip文件中读取（节省nginx空间）
-    // 如果zip文件解压在nginx，可以改为 "/static/"
-    staticBaseUrl: "/api/static/",
+    // 测试环境：使用 Nginx 配置的静态资源地址
+    staticBaseUrl: "http://47.93.247.175:8081/static/",
+    petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
   },
   product: {
-    // 生产环境：使用后端API从zip文件中读取
-    // 如果使用CDN，可以改为 "https://your-cdn.com/static/"
-    staticBaseUrl: "/api/static/",
+    // 生产环境：使用 Nginx 配置的静态资源地址
+    staticBaseUrl: "http://47.93.247.175:8081/static/",
+    petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
   },
   dev: {
-    // 开发环境：本地开发服务器
+    // 开发环境：本地开发服务器，代理到 D:\petZoom
     staticBaseUrl: "http://localhost:8011/api/static/",
+    petImgBaseUrl: "http://localhost:8011/api/pet-imgs/",
   },
 };
 

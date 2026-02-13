@@ -40,3 +40,15 @@ export function resolveEnvironment(): "test" | "product" | "dev" | undefined {
   }
   return "test";
 }
+
+/**
+ * 解析 API 地址
+ */
+export function resolveApiUrl(): string {
+  if (__DEV__) {
+    const ip = getDevMachineHostIp();
+    return ip ? `http://${ip}:8011` : "http://localhost:8011";
+  }
+  // 生产环境 API 地址 (与 shared 配置保持一致或通过环境变量读取)
+  return "https://api.pet-evolution.com";
+}

@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { getStageName, type Pet } from "@pet-evolution/shared";
+import { getStageName } from "@pet-evolution/shared";
 import type { MessageItem, PetSceneActions, PetSceneProps } from "./types";
-import { SpinePet } from "./SpinePet";
+import { AnimatedPet } from "./AnimatedPet";
+import { usePetAnimation } from "./hooks/useAnimatedPet";
 import GlassSurface from "../components/GlassSurface/GlassSurface";
 import ShinyText from "../components/ShinyText";
 import ClickSpark from "../components/ClickSpark";
@@ -23,6 +24,9 @@ export function PetScene({
   const [showMenu, setShowMenu] = useState(false);
   const [pendingChat, setPendingChat] = useState(false);
   const [petMessage, setPetMessage] = useState<string | null>(null);
+
+  // PNG 动画状态管理
+  const { animState, triggerAnim } = usePetAnimation("idle");
 
   // 监听外部传入的消息
   useEffect(() => {
@@ -54,6 +58,9 @@ export function PetScene({
     action: keyof Pick<PetSceneActions, "feed" | "play" | "touch">,
   ) => {
     try {
+      // 触发对应的 PNG 动画
+      triggerAnim(action, 2000);
+
       let result;
       if (action === "feed") {
         result = await actions.feed(20);
@@ -96,7 +103,7 @@ export function PetScene({
               />
             )}
 
-            <SpinePet pet={pet} />
+            <AnimatedPet pet={pet} animState={animState} />
           </div>
           <div className="pet-shadow" />
         </div>

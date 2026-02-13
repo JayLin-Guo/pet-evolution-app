@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import type { WebViewMessageEvent } from "react-native-webview";
 import { WebView } from "react-native-webview";
-import type { Pet } from "@pet-evolution/shared";
+import type { PetResponseDto } from "@pet-evolution/shared";
 
 type WebToNativeMessage =
   | { type: "WEBVIEW_READY" }
@@ -27,7 +27,7 @@ type WebToNativeMessage =
 type NativeToWebMessage =
   | {
       type: "UPDATE_PET";
-      data: Pet;
+      data: PetResponseDto;
       /**
        * 环境标识（可选）：test/product/dev
        */
@@ -38,23 +38,15 @@ type NativeToWebMessage =
   | { type: "ERROR"; data: { message: string; requestId?: string } };
 
 interface PetWebViewProps {
-  pet: Pet;
-  onFeed: (foodValue?: number) => Promise<void> | void;
-  onPlay: () => Promise<void> | void;
-  onTouch: () => Promise<void> | void;
-  onChat: (message: string) => Promise<string>;
+  pet: PetResponseDto;
   onLogout: () => Promise<void> | void;
-  /**
-   * Web 宠物页面地址：
-   * - 开发期建议指向 web-pet dev server（如 http://<ip>:3000）
-   * - 也可以替换为 CDN / 静态站点
-   */
   webUrl: string;
-  /**
-   * 环境标识（可选）：test/product/dev
-   * 用于 web-pet 内部根据环境选择对应的静态资源域名前缀
-   */
   environment?: "test" | "product" | "dev";
+  // TODO: 后续实现互动功能时取消可选
+  onFeed?: (foodValue?: number) => Promise<void> | void;
+  onPlay?: () => Promise<void> | void;
+  onTouch?: () => Promise<void> | void;
+  onChat?: (message: string) => Promise<string>;
 }
 
 function safeJsonParse(input: string): unknown {
@@ -67,13 +59,13 @@ function safeJsonParse(input: string): unknown {
 
 export const PetWebView: React.FC<PetWebViewProps> = ({
   pet,
+  onLogout,
+  webUrl,
+  environment,
   onFeed,
   onPlay,
   onTouch,
   onChat,
-  onLogout,
-  webUrl,
-  environment,
 }) => {
   const webRef = useRef<WebView>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -150,39 +142,28 @@ export const PetWebView: React.FC<PetWebViewProps> = ({
             return;
           }
           case "FEED": {
-            // Web 请求喂食 -> 调用 Native 喂食逻辑
-            const message = await onFeed(msg.data?.foodValue);
-            if (message) {
-              postToWeb({ type: "ACTION_MESSAGE", data: { message } });
-            }
+            if (!onFeed) return;
+            await onFeed(msg.data?.foodValue);
             return;
           }
           case "PLAY": {
-            // Web 请求玩耍 -> 调用 Native 玩耍逻辑
-            const message = await onPlay();
-            if (message) {
-              postToWeb({ type: "ACTION_MESSAGE", data: { message } });
-            }
+            if (!onPlay) return;
+            await onPlay();
             return;
           }
           case "TOUCH": {
-            // Web 请求抚摸 -> 调用 Native 抚摸逻辑
-            const message = await onTouch();
-            if (message) {
-              postToWeb({ type: "ACTION_MESSAGE", data: { message } });
-            }
+            if (!onTouch) return;
+            await onTouch();
             return;
           }
           case "CHAT": {
-            // Web 发送对话 -> Native 调用 AI 接口 -> 返回结果给 Web
+            if (!onChat) return; // TODO: 后续实现
             const data = msg.data;
             const text = typeof data === "string" ? data : data.text;
             const requestId =
               typeof data === "string" ? undefined : data.requestId;
 
             const reply = await onChat(text);
-
-            // 将 AI 回复发送回 Web
             postToWeb({ type: "CHAT_RESPONSE", data: { reply, requestId } });
             return;
           }

@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PetEggsModule } from './pet-eggs/pet-eggs.module';
 import { PetsModule } from './pets/pets.module';
+import { ScannerModule } from './scanner/scanner.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PetsModule } from './pets/pets.module';
     AuthModule,
     PetEggsModule,
     PetsModule,
+    ScannerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

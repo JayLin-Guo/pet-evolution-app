@@ -9,11 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@esotericsoftware/spine-phaser-v3": "^4.2.100",
+    "@esotericsoftware/spine-webgl": "^4.2.98",
+    "@eva/eva.js": "^1.2.8",
+    "@eva/plugin-renderer": "^1.2.8",
+    "@eva/plugin-renderer-spine38": "^1.2.8",
     "@iconify/react": "^6.0.2",
     "@pet-evolution/shared": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.28.1",
+    "i": "^0.3.7",
+    "npm": "^11.8.0",
     "ogl": "^1.0.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
