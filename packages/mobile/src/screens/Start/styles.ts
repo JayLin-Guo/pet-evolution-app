@@ -130,8 +130,8 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   petImage: {
-    width: 280,
-    height: 280,
+    width: 200,
+    height: 200,
   },
   petEmoji: {
     fontSize: 100,
