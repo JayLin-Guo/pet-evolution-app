@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { resolveWebPetUrl, resolveApiUrl } from "../../utils/config";
+import { REMOTE_STATIC_BASE_URL } from "@pet-evolution/shared";
+
 import {
   useAdoption,
   useAdoptionAnimations,
@@ -68,8 +69,7 @@ export const AdoptionScreen: React.FC<AdoptionScreenProps> = ({
       : drawnEgg.resource_path;
 
     // 统一使用远程静态资源服务器
-    const staticBaseUrl = "http://47.93.247.175:8081/static";
-    return `${staticBaseUrl}/spine-role/${folder}/idle2.gif`;
+    return `${REMOTE_STATIC_BASE_URL}/${folder}/idle2.gif`;
   };
 
   return (

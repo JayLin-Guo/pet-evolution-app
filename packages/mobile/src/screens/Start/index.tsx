@@ -1,8 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Animated, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { PetResponseDto } from "@pet-evolution/shared";
-import { resolveWebPetUrl, resolveApiUrl } from "../../utils/config";
+import { PetResponseDto, REMOTE_STATIC_BASE_URL } from "@pet-evolution/shared";
 import { Particle } from "../Adoption/Particle";
 import { useStartAnimations } from "./useStartAnimations";
 import { styles } from "./styles";
@@ -30,8 +29,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ pet, onEnter }) => {
       : pet.resource_folder;
 
     // 统一使用远程静态资源服务器
-    const staticBaseUrl = "http://47.93.247.175:8081/static";
-    return `${staticBaseUrl}/spine-role/${folder}/idle2.gif`;
+    return `${REMOTE_STATIC_BASE_URL}/${folder}/idle2.gif`;
   };
 
   const gifUrl = getPetGifUrl();

@@ -10,24 +10,29 @@ export interface EnvironmentConfig {
   petImgBaseUrl: string;
 }
 
+import {
+  REMOTE_STATIC_BASE_URL,
+  REMOTE_PET_IMG_BASE_URL,
+} from "@pet-evolution/shared";
+
 /**
  * 环境配置映射表
  */
 const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
   test: {
     // 测试环境：使用 Nginx 配置的静态资源地址
-    staticBaseUrl: "http://47.93.247.175:8081/static/spine-role",
-    petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
+    staticBaseUrl: REMOTE_STATIC_BASE_URL,
+    petImgBaseUrl: REMOTE_PET_IMG_BASE_URL + "/",
   },
   product: {
     // 生产环境：使用 Nginx 配置的静态资源地址
-    staticBaseUrl: "http://47.93.247.175:8081/static/spine-role",
-    petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
+    staticBaseUrl: REMOTE_STATIC_BASE_URL,
+    petImgBaseUrl: REMOTE_PET_IMG_BASE_URL + "/",
   },
   dev: {
     // 开发环境：指向远程静态资源服务器
-    staticBaseUrl: "http://47.93.247.175:8081/static/spine-role",
-    petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
+    staticBaseUrl: REMOTE_STATIC_BASE_URL,
+    petImgBaseUrl: REMOTE_PET_IMG_BASE_URL + "/",
   },
 };
 
