@@ -29,13 +29,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({ pet, onEnter }) => {
       ? pet.resource_folder.substring(1)
       : pet.resource_folder;
 
-    if (__DEV__) {
-      const apiUrl = resolveApiUrl();
-      return `${apiUrl}/api/static/${folder}/idle2.gif`;
-    }
-
-    const baseUrl = resolveWebPetUrl();
-    return `${baseUrl}/spine-role/${folder}/idle2.gif`;
+    // 统一使用远程静态资源服务器
+    const staticBaseUrl = "http://47.93.247.175:8081/static";
+    return `${staticBaseUrl}/spine-role/${folder}/idle2.gif`;
   };
 
   const gifUrl = getPetGifUrl();

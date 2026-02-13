@@ -16,18 +16,18 @@ export interface EnvironmentConfig {
 const ENV_CONFIGS: Record<Environment, EnvironmentConfig> = {
   test: {
     // 测试环境：使用 Nginx 配置的静态资源地址
-    staticBaseUrl: "http://47.93.247.175:8081/static/",
+    staticBaseUrl: "http://47.93.247.175:8081/static/spine-role",
     petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
   },
   product: {
     // 生产环境：使用 Nginx 配置的静态资源地址
-    staticBaseUrl: "http://47.93.247.175:8081/static/",
+    staticBaseUrl: "http://47.93.247.175:8081/static/spine-role",
     petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
   },
   dev: {
-    // 开发环境：本地开发服务器，代理到 D:\petZoom
-    staticBaseUrl: "http://localhost:8011/api/static/",
-    petImgBaseUrl: "http://localhost:8011/api/pet-imgs/",
+    // 开发环境：指向远程静态资源服务器
+    staticBaseUrl: "http://47.93.247.175:8081/static/spine-role",
+    petImgBaseUrl: "http://47.93.247.175:8081/pet-imgs/",
   },
 };
 
