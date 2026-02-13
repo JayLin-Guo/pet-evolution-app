@@ -1,7 +1,9 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Animated } from "react-native";
+import { View, Text, TouchableOpacity, Animated, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { PetResponseDto } from "@pet-evolution/shared";
+import { resolveWebPetUrl, resolveApiUrl } from "../../utils/config";
+import { Particle } from "../Adoption/Particle";
 import { useStartAnimations } from "./useStartAnimations";
 import { styles } from "./styles";
 
@@ -14,130 +16,195 @@ export const StartScreen: React.FC<StartScreenProps> = ({ pet, onEnter }) => {
   const {
     fadeAnim,
     slideAnim,
-    floatingAnim,
     petBounceAnim,
     scaleAnim,
-    floatingInterpolate,
+    glowPulseAnim,
+    levelShimmerAnim,
+    auraPulseAnim,
   } = useStartAnimations();
 
+  const getPetGifUrl = (): string | null => {
+    if (!pet.resource_folder) return null;
+    const folder = pet.resource_folder.startsWith("/")
+      ? pet.resource_folder.substring(1)
+      : pet.resource_folder;
+
+    if (__DEV__) {
+      const apiUrl = resolveApiUrl();
+      return `${apiUrl}/api/static/${folder}/idle2.gif`;
+    }
+
+    const baseUrl = resolveWebPetUrl();
+    return `${baseUrl}/spine-role/${folder}/idle2.gif`;
+  };
+
+  const gifUrl = getPetGifUrl();
+
   return (
-    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
-      {/* 背景装饰 */}
+    <View style={styles.container}>
+      <Image
+        source={require("../../assets/pet-draw-bc.png")}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      />
+
       <View style={styles.backgroundDecorations}>
-        <Animated.View
-          style={[
-            styles.floatingElement,
-            styles.star1,
-            { transform: [{ translateY: floatingInterpolate }] },
-          ]}
-        >
-          <Text style={styles.decorationText}>🌟</Text>
-        </Animated.View>
-        <Animated.View
-          style={[
-            styles.floatingElement,
-            styles.star2,
-            {
-              transform: [
-                {
-                  translateY: floatingAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 6],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Text style={styles.decorationText}>✨</Text>
-        </Animated.View>
-        <Animated.View
-          style={[
-            styles.floatingElement,
-            styles.heart,
-            {
-              transform: [
-                {
-                  translateX: floatingAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 10],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Text style={styles.decorationText}>💖</Text>
-        </Animated.View>
+        {[...Array(30)].map((_, i) => (
+          <Particle key={i} />
+        ))}
       </View>
 
       <View style={styles.inner}>
-        {/* 标题 */}
+        {/* 顶部：境界徽章 */}
         <Animated.View
           style={[
-            styles.headerSection,
+            styles.topSection,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={styles.welcomeTitle}>🎉 欢迎回来</Text>
-          <Text style={styles.subtitle}>你的伙伴正在等待你</Text>
+          <View style={styles.levelBadgeWrapper}>
+            <Animated.View
+              style={[
+                styles.levelGlow,
+                {
+                  opacity: glowPulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.4, 0.9],
+                  }),
+                  transform: [
+                    {
+                      scale: glowPulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.95, 1.08],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+            <LinearGradient
+              colors={["rgba(255,180,50,0.85)", "rgba(255,120,20,0.85)"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.levelBadge}
+            >
+              <Text style={styles.levelIcon}>⚡</Text>
+              <Text style={styles.levelText}>{pet.cultivation_level}</Text>
+            </LinearGradient>
+            <Animated.View
+              style={[
+                styles.shimmerOverlay,
+                {
+                  transform: [
+                    {
+                      translateX: levelShimmerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-120, 120],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          </View>
         </Animated.View>
 
-        {/* 宠物展示 */}
+        {/* 中间：宠物展示 */}
         <Animated.View
           style={[
             styles.petSection,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+              transform: [{ scale: scaleAnim }],
             },
           ]}
         >
+          {/* 外圈脉冲光环 */}
+          <Animated.View
+            style={[
+              styles.auraRingOuter,
+              {
+                opacity: auraPulseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.1, 0.3],
+                }),
+                transform: [
+                  {
+                    scale: auraPulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1.0, 1.15],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.auraRingInner,
+              {
+                opacity: auraPulseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.15, 0.45],
+                }),
+                transform: [
+                  {
+                    scale: auraPulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1.05],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+
+          {/* 底部发光 */}
+          <Animated.View
+            style={[
+              styles.bottomGlow,
+              {
+                opacity: glowPulseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 0.7],
+                }),
+                transform: [
+                  {
+                    scaleX: glowPulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1.1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+
+          {/* 宠物 */}
           <Animated.View
             style={[
               styles.petContainer,
               { transform: [{ scale: petBounceAnim }] },
             ]}
           >
-            <Text style={styles.petEmoji}>🐲</Text>
-            <View style={styles.petGlow} />
+            {gifUrl ? (
+              <Image
+                source={{ uri: gifUrl }}
+                style={styles.petImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <Text style={styles.petEmoji}>🐲</Text>
+            )}
           </Animated.View>
+
           <Text style={styles.petName}>{pet.name}</Text>
-          <Text style={styles.petLevel}>{pet.cultivation_level}</Text>
         </Animated.View>
 
-        {/* 宠物信息 */}
-        <Animated.View
-          style={[
-            styles.infoSection,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
-          <View style={styles.infoCard}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>亲密度</Text>
-              <Text style={styles.infoValue}>{pet.intimacy}%</Text>
-            </View>
-            <View style={styles.infoDivider} />
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>快乐</Text>
-              <Text style={styles.infoValue}>{pet.happiness}%</Text>
-            </View>
-            <View style={styles.infoDivider} />
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>健康</Text>
-              <Text style={styles.infoValue}>{pet.health}%</Text>
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* 进入按钮 */}
+        {/* 底部：进入按钮 */}
         <Animated.View
           style={[
             styles.bottomSection,
@@ -149,7 +216,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ pet, onEnter }) => {
         >
           <TouchableOpacity style={styles.enterButton} onPress={onEnter}>
             <LinearGradient
-              colors={["#ff6b6b", "#ee5a24"]}
+              colors={["#F2994A", "#F2C94C"]}
               style={styles.buttonGradient}
             >
               <Text style={styles.buttonText}>🚀 进入世界</Text>
@@ -157,6 +224,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({ pet, onEnter }) => {
           </TouchableOpacity>
         </Animated.View>
       </View>
-    </LinearGradient>
+    </View>
   );
 };
