@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import type { Pet } from "@pet-evolution/shared";
+import type { PetResponseDto } from "@pet-evolution/shared";
 import { getEnvironmentConfig, type Environment } from "../config";
 
 /**
  * Hook: 根据环境和宠物信息计算 Spine 资源 URL
  */
 export function useSpineResources(
-  pet: Pet | undefined,
+  pet: PetResponseDto | undefined,
   environment: Environment = (() => {
-    // 本地开发时默认走 dev（避免 /api/static 落到前端 dev server 返回 index.html）
     if (typeof window !== "undefined") {
       const host = window.location.hostname;
       if (host === "localhost" || host === "127.0.0.1") return "dev";
@@ -17,25 +16,20 @@ export function useSpineResources(
   })(),
 ) {
   return useMemo(() => {
-    if (!pet?.spinePath) return { jsonUrl: null, atlasUrl: null };
-
-    pet.spinePath = "mon_acorn_girl_03/mon_acorn_girl_03";
+    if (!pet?.resource_folder) return { jsonUrl: null, atlasUrl: null };
 
     const config = getEnvironmentConfig(environment);
     const baseUrl = config.staticBaseUrl.replace(/\/$/, "");
 
-    const rawPath = pet.spinePath.startsWith("/")
-      ? pet.spinePath
-      : `/${pet.spinePath}`;
-
-    const fullPath = `${baseUrl}${rawPath}`;
+    const folderName = pet.resource_folder.replace(/^\//, "");
+    const fullPath = `${baseUrl}/${folderName}/${folderName}`;
 
     return {
       jsonUrl: `${fullPath}.json`,
       atlasUrl: `${fullPath}.atlas`,
       imageName: `${fullPath}.png`,
     };
-  }, [pet?.spinePath, environment]);
+  }, [pet?.resource_folder, environment]);
 }
 
 /**
@@ -47,11 +41,9 @@ export function useSpinePlayer(
   atlasUrl: string | null,
 ) {
   const playerRef = useRef<any>(null);
-  const prevUrlRef = useRef<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 加载 Spine 库和初始化 Player
   useEffect(() => {
     if (!jsonUrl || !atlasUrl || !container) {
       console.log("useSpinePlayer", jsonUrl, atlasUrl, container);
@@ -107,22 +99,14 @@ export function useSpinePlayer(
           } catch (e) {}
         }
 
-        // ----------------------------------------------------------------
-        // 🕵️‍ Debug 模式全开：为了找到那个隐形的宠物！
-        // ----------------------------------------------------------------
         playerRef.current = new spine.SpinePlayer(playerDiv, {
           jsonUrl,
           atlasUrl,
           premultipliedAlpha: true,
-
-          // 1. 背景设为灰色，确保 Canvas 真的渲染了
           backgroundColor: "#aaaaaa",
-
           alpha: true,
           showControls: true,
           preserveDrawingBuffer: true,
-
-          // 2. 开启 Debug 渲染：画骨头、画边界
           debug: {
             bones: true,
             regions: true,
@@ -131,12 +115,7 @@ export function useSpinePlayer(
             paths: true,
             clipping: true,
           },
-
-          // 3. 核心避坑配置
           fitToCanvas: false,
-
-          // 4. 超级广角视口：覆盖 (-1500, -1500) 到 (1500, 1500)
-          // 强制以 (0,0) 为中心
           viewport: {
             x: -1500,
             y: -1500,
@@ -155,11 +134,7 @@ export function useSpinePlayer(
               const state = p.animationState;
               const skeleton = p.skeleton;
 
-              // 物理补丁
               if (!skeleton.physics) skeleton.physics = [];
-
-              // 强制重置姿态
-              // skeleton.setToSetupPose();
 
               console.log("🦴 Skeleton Data:", {
                 x: skeleton.data.x,
@@ -168,7 +143,6 @@ export function useSpinePlayer(
                 height: skeleton.data.height,
               });
 
-              // 启动动画
               const animations = p.skeleton.data.animations.map(
                 (a: any) => a.name,
               );
@@ -183,7 +157,7 @@ export function useSpinePlayer(
               console.error("❌ Spine setup failed:", e);
             }
           },
-          error: (p: any, msg: string) => {
+          error: (_p: any, msg: string) => {
             setIsLoading(false);
             console.error("❌ Spine Error:", msg);
             setError(`Spine Error: ${msg}`);
@@ -200,7 +174,6 @@ export function useSpinePlayer(
     return () => {
       if (playerRef.current) {
         try {
-          // 兼容性清理：有些版本可能是 dispose，有些可能是 destroy
           if (typeof playerRef.current.dispose === "function") {
             playerRef.current.dispose();
           } else if (typeof playerRef.current.destroy === "function") {

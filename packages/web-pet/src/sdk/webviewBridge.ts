@@ -1,10 +1,10 @@
-import type { Pet } from "@pet-evolution/shared";
+import type { PetResponseDto } from "@pet-evolution/shared";
 import type { Environment } from "./config";
 
 type NativeToWebMessage =
   | {
       type: "UPDATE_PET";
-      data: Pet;
+      data: PetResponseDto;
       /**
        * 环境标识（可选）：test/product/dev
        * 如果不传，使用默认环境（dev）
@@ -33,9 +33,9 @@ function safeParseJson(input: string): unknown {
 
 export interface WebViewBridge {
   connect: () => () => void;
-  getPet: () => Pet | null;
+  getPet: () => PetResponseDto | null;
   getSpineBaseUrl: () => string | null;
-  onPetChange: (listener: (pet: Pet) => void) => () => void;
+  onPetChange: (listener: (pet: PetResponseDto) => void) => () => void;
   onSpineBaseUrlChange: (listener: (url: string | null) => void) => () => void;
   onActionMessage: (listener: (message: string) => void) => () => void;
   feed: (foodValue?: number) => void;
@@ -46,9 +46,9 @@ export interface WebViewBridge {
 }
 
 export function createWebViewBridge(): WebViewBridge {
-  let pet: Pet | null = null;
+  let pet: PetResponseDto | null = null;
   let spineBaseUrl: string | null = null;
-  const petListeners = new Set<(p: Pet) => void>();
+  const petListeners = new Set<(p: PetResponseDto) => void>();
   const spineBaseUrlListeners = new Set<(url: string | null) => void>();
   const actionMessageListeners = new Set<(message: string) => void>();
 
@@ -87,9 +87,9 @@ export function createWebViewBridge(): WebViewBridge {
       pet = msg.data;
       petListeners.forEach((fn) => fn(msg.data));
 
-      // 直接从 Pet 数据中获取完整 Spine 路径
-      if (msg.data.spinePath) {
-        const newSpineBaseUrl = msg.data.spinePath;
+      // 从 PetResponseDto 中获取资源文件夹路径
+      if (msg.data.resource_folder) {
+        const newSpineBaseUrl = msg.data.resource_folder;
 
         if (newSpineBaseUrl !== spineBaseUrl) {
           spineBaseUrl = newSpineBaseUrl;

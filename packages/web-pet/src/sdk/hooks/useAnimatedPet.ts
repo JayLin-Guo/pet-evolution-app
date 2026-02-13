@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import type { Pet } from "@pet-evolution/shared";
+import type { PetResponseDto } from "@pet-evolution/shared";
 
 import { getEnvironmentConfig, type Environment } from "../config";
 
@@ -44,11 +44,11 @@ function getDefaultEnv(): Environment {
  * PNG 路径：{petImgBaseUrl}/{petImageName}.png        (imgs 目录)
  */
 export function usePetImageUrl(
-  pet: Pet | undefined,
+  pet: PetResponseDto | undefined,
   environment: Environment = getDefaultEnv(),
 ) {
   return useMemo(() => {
-    if (!pet?.petImageName) {
+    if (!pet?.resource_folder) {
       return {
         staticImageUrl: null,
         getGifUrl: () => null as string | null,
@@ -60,7 +60,7 @@ export function usePetImageUrl(
 
     // PNG 来自 imgs 目录
     const imgBaseUrl = config.petImgBaseUrl.replace(/\/$/, "");
-    const imageName = pet.petImageName;
+    const imageName = pet.resource_folder;
     const staticImageUrl = `${imgBaseUrl}/${imageName}.png`;
 
     // GIF 来自 spine-role 目录（通过 /api/static/ 路由）
@@ -71,7 +71,7 @@ export function usePetImageUrl(
     };
 
     return { staticImageUrl, getGifUrl, imageName };
-  }, [pet?.petImageName, pet?.stage, pet?.subStage, environment]);
+  }, [pet?.resource_folder, pet?.cultivation_level, environment]);
 }
 
 /**

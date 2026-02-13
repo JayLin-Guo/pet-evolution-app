@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { type Pet } from "@pet-evolution/shared";
+import { type PetResponseDto } from "@pet-evolution/shared";
 import { type Environment } from "./config";
 import {
   usePetImageUrl,
@@ -15,7 +15,7 @@ import "./AnimatedPet.css";
 
 interface AnimatedPetProps {
   /** 宠物数据 */
-  pet?: Pet;
+  pet?: PetResponseDto;
   /** 环境标识 */
   environment?: Environment;
   /** 外部控制的动画状态 */
@@ -85,7 +85,6 @@ export function AnimatedPet({
   environment,
   animState: externalAnimState,
 }: AnimatedPetProps) {
-  pet.petImageName = "mon_angry_dragon_03";
   // 计算图片 URL
   const { staticImageUrl, getGifUrl } = usePetImageUrl(pet, environment);
 

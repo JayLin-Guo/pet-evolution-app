@@ -1,11 +1,11 @@
 import "./App.css";
 import { useEffect, useMemo, useState } from "react";
 import { createWebViewBridge, PetScene, type PetSceneActions } from "./sdk";
-import type { Pet } from "@pet-evolution/shared";
+import type { PetResponseDto } from "@pet-evolution/shared";
 
 function App() {
   const bridge = useMemo(() => createWebViewBridge(), []);
-  const [pet, setPet] = useState<Pet | null>(null);
+  const [pet, setPet] = useState<PetResponseDto | null>(null);
   const [spineBaseUrl, setSpineBaseUrl] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -30,7 +30,6 @@ function App() {
     () => ({
       feed: async (foodValue) => {
         bridge.feed(foodValue);
-        // 消息会通过 onActionMessage 回调设置
         return { pet: pet!, message: actionMessage || undefined };
       },
       play: async () => {

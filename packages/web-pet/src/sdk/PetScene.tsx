@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { getStageName } from "@pet-evolution/shared";
 import type { MessageItem, PetSceneActions, PetSceneProps } from "./types";
 import { AnimatedPet } from "./AnimatedPet";
 import { usePetAnimation } from "./hooks/useAnimatedPet";
@@ -36,9 +35,11 @@ export function PetScene({
   }, [propActionMessage]);
 
   const expProgress = useMemo(() => {
-    const maxExp = pet.level * 100;
-    return maxExp > 0 ? (pet.exp / maxExp) * 100 : 0;
-  }, [pet.exp, pet.level]);
+    // cultivation_exp is the raw XP; show as percentage capped at 100
+    // In a real game, this might map to levels (e.g. level * 100)
+    const maxExp = 100; // Temporary cap for display
+    return Math.min((pet.cultivation_exp / maxExp) * 100, 100);
+  }, [pet.cultivation_exp]);
 
   const handleSendMessage = async () => {
     const text = message.trim();
@@ -59,7 +60,7 @@ export function PetScene({
   ) => {
     try {
       // 触发对应的 PNG 动画
-      triggerAnim(action, 2000);
+      triggerAnim(action, 2500);
 
       let result;
       if (action === "feed") {
@@ -83,9 +84,9 @@ export function PetScene({
 
       <div className="background-decorations">
         <div className="floating-star star-1">✨</div>
-        <div className="floating-star star-2">🌟</div>
-        <div className="floating-star star-3">💫</div>
-        <div className="floating-star star-4">☁️</div>
+        <div className="floating-star star-2">✦</div>
+        <div className="floating-star star-3">✧</div>
+        <div className="floating-star star-4">✴</div>
       </div>
 
       <div className="main-content">
@@ -111,33 +112,37 @@ export function PetScene({
         <div className="status-sidebar">
           <GlassSurface
             width="100%"
-            height="100%"
-            borderRadius={24}
-            backgroundOpacity={0.2}
-            blur={20}
-            displace={2}
-            distortionScale={-200}
+            height="auto"
+            borderRadius={18}
+            backgroundOpacity={0.08}
+            blur={24}
+            displace={1}
+            distortionScale={-150}
             redOffset={0}
-            greenOffset={15}
-            blueOffset={30}
+            greenOffset={10}
+            blueOffset={20}
           >
             <div className="status-list">
               <div className="level-badge">
-                <div className="level-label">LV</div>
+                <div className="level-label">境界</div>
                 <div className="level-value">
                   <ShinyText
-                    text={pet.level.toString()}
-                    speed={3}
-                    color="#ffffff"
-                    shineColor="#FFD700"
+                    text={pet.cultivation_level}
+                    speed={4}
+                    color="#FFD700"
+                    shineColor="#FFFFFF"
                   />
                 </div>
               </div>
 
               <div className="status-item">
                 <div className="status-label">
-                  <span className="status-icon">✨</span>
-                  <span>经验</span>
+                  <Icon
+                    icon="solar:bolt-bold-duotone"
+                    className="status-icon"
+                    color="#FFD700"
+                  />
+                  <span>修炼</span>
                 </div>
                 <div className="status-bar">
                   <div
@@ -145,6 +150,7 @@ export function PetScene({
                     style={{
                       width: `${expProgress}%`,
                       background: "linear-gradient(90deg, #FFD700, #FFA500)",
+                      boxShadow: "0 0 6px rgba(255, 215, 0, 0.4)",
                     }}
                   />
                 </div>
@@ -152,8 +158,12 @@ export function PetScene({
 
               <div className="status-item">
                 <div className="status-label">
-                  <span className="status-icon">🍖</span>
-                  <span>饥饿</span>
+                  <Icon
+                    icon="solar:hamburger-menu-bold-duotone"
+                    className="status-icon"
+                    color="#FF9500"
+                  />
+                  <span>灵食</span>
                 </div>
                 <div className="status-bar">
                   <div
@@ -168,8 +178,12 @@ export function PetScene({
 
               <div className="status-item">
                 <div className="status-label">
-                  <span className="status-icon">🎮</span>
-                  <span>快乐</span>
+                  <Icon
+                    icon="solar:gamepad-bold-duotone"
+                    className="status-icon"
+                    color="#FF2D55"
+                  />
+                  <span>道心</span>
                 </div>
                 <div className="status-bar">
                   <div
@@ -184,8 +198,12 @@ export function PetScene({
 
               <div className="status-item">
                 <div className="status-label">
-                  <span className="status-icon">❤️</span>
-                  <span>健康</span>
+                  <Icon
+                    icon="solar:heart-angle-bold-duotone"
+                    className="status-icon"
+                    color="#34C759"
+                  />
+                  <span>体魄</span>
                 </div>
                 <div className="status-bar">
                   <div
@@ -220,14 +238,10 @@ export function PetScene({
                 <GlassSurface
                   width="auto"
                   height="auto"
-                  borderRadius={20}
-                  backgroundOpacity={0.2}
-                  blur={20}
-                  displace={2}
-                  distortionScale={-200}
-                  redOffset={0}
-                  greenOffset={15}
-                  blueOffset={30}
+                  borderRadius={16}
+                  backgroundOpacity={0.1}
+                  blur={24}
+                  displace={1}
                 >
                   <div className="dropdown-list">
                     <button
@@ -236,9 +250,12 @@ export function PetScene({
                         setShowHistory(true);
                         setShowMenu(false);
                       }}
-                      title="消息记录"
+                      title="传音记录"
                     >
-                      <Icon icon="lucide:message-circle" className="nav-icon" />
+                      <Icon
+                        icon="solar:chat-round-dots-bold-duotone"
+                        className="nav-icon"
+                      />
                     </button>
                     <button
                       className="nav-button"
@@ -246,9 +263,12 @@ export function PetScene({
                         setShowStatus(true);
                         setShowMenu(false);
                       }}
-                      title="成长状态"
+                      title="详细状态"
                     >
-                      <Icon icon="lucide:bar-chart-2" className="nav-icon" />
+                      <Icon
+                        icon="solar:chart-square-bold-duotone"
+                        className="nav-icon"
+                      />
                     </button>
                     <button
                       className="nav-button logout-button"
@@ -256,9 +276,12 @@ export function PetScene({
                         actions.logout();
                         setShowMenu(false);
                       }}
-                      title="退出登录"
+                      title="遁去"
                     >
-                      <Icon icon="lucide:log-out" className="nav-icon" />
+                      <Icon
+                        icon="solar:logout-2-bold-duotone"
+                        className="nav-icon"
+                      />
                     </button>
                   </div>
                 </GlassSurface>
@@ -274,7 +297,11 @@ export function PetScene({
               onClick={() => handleAction("feed")}
             >
               <div className="action-icon-circle feed-button">
-                <span className="action-icon">🍖</span>
+                <Icon
+                  icon="solar:hamburger-menu-bold-duotone"
+                  className="action-icon"
+                  color="#FFFFFF"
+                />
               </div>
               <span className="action-label">喂食</span>
             </button>
@@ -286,7 +313,11 @@ export function PetScene({
               onClick={() => handleAction("play")}
             >
               <div className="action-icon-circle play-button">
-                <span className="action-icon">🎮</span>
+                <Icon
+                  icon="solar:gamepad-bold-duotone"
+                  className="action-icon"
+                  color="#FFFFFF"
+                />
               </div>
               <span className="action-label">玩耍</span>
             </button>
@@ -298,7 +329,11 @@ export function PetScene({
               onClick={() => handleAction("touch")}
             >
               <div className="action-icon-circle touch-button">
-                <span className="action-icon">💕</span>
+                <Icon
+                  icon="solar:heart-angle-bold-duotone"
+                  className="action-icon"
+                  color="#FFFFFF"
+                />
               </div>
               <span className="action-label">抚摸</span>
             </button>
@@ -310,30 +345,33 @@ export function PetScene({
         <GlassSurface
           width="100%"
           height="auto"
-          borderRadius={24}
-          backgroundOpacity={0.1}
-          blur={15}
-          displace={5}
-          distortionScale={-400}
+          borderRadius={18}
+          backgroundOpacity={0.08}
+          blur={16}
+          displace={2}
+          distortionScale={-200}
         >
           <div className="chat-content-inner">
             <button
               className="mode-button"
               onClick={() => setIsVoiceMode(!isVoiceMode)}
             >
-              <Icon icon="mynaui:contactless-solid" width="24" height="24" />
+              <Icon
+                icon="solar:microphone-3-bold-duotone"
+                className="mode-icon"
+              />
             </button>
 
             {isVoiceMode ? (
               <button className="voice-button">
-                <span>按住 说话</span>
+                <span>按住 传音</span>
               </button>
             ) : (
               <div className="text-input-wrapper">
                 <input
                   type="text"
                   className="text-input"
-                  placeholder="和宠物说点什么..."
+                  placeholder="与道友交流..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
@@ -354,22 +392,24 @@ export function PetScene({
         <div className="modal-overlay" onClick={() => setShowHistory(false)}>
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">消息记录</div>
+              <div className="modal-title">传音记录</div>
               <button
                 className="modal-close"
                 onClick={() => setShowHistory(false)}
               >
-                ✕
+                <Icon icon="lucide:x" />
               </button>
             </div>
             <div className="modal-content">
               {messages.length === 0 ? (
-                <div style={{ padding: 16, opacity: 0.7 }}>还没有消息记录</div>
+                <div style={{ padding: 16, opacity: 0.7, textAlign: "center" }}>
+                  暂无传音记录
+                </div>
               ) : (
                 messages.map((m, idx) => (
                   <div key={idx} className={`msg-bubble ${m.sender}`}>
                     <div className="msg-sender">
-                      {m.sender === "user" ? "我" : "宠物"}
+                      {m.sender === "user" ? "我" : pet.name}
                     </div>
                     <div className="msg-text">{m.text}</div>
                   </div>
@@ -384,29 +424,52 @@ export function PetScene({
         <div className="modal-overlay" onClick={() => setShowStatus(false)}>
           <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">成长状态</div>
+              <div className="modal-title">修为状态</div>
               <button
                 className="modal-close"
                 onClick={() => setShowStatus(false)}
               >
-                ✕
+                <Icon icon="lucide:x" />
               </button>
             </div>
             <div className="modal-content">
               <div style={{ padding: 12 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>
-                  📋 基本信息
+                <div
+                  style={{ fontWeight: 700, marginBottom: 8, color: "#FFD700" }}
+                >
+                  📋 基础信息
                 </div>
-                <div>名字：{pet.name}</div>
-                <div>等级：Lv.{pet.level}</div>
-                <div>阶段：{getStageName(pet.stage, pet.subStage)}</div>
+                <div style={{ marginBottom: 4 }}>道号：{pet.name}</div>
+                <div style={{ marginBottom: 4 }}>
+                  境界：{pet.cultivation_level}
+                </div>
+                <div style={{ marginBottom: 4 }}>
+                  修为：{pet.cultivation_exp}
+                </div>
               </div>
-              <div style={{ padding: 12 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>💫 状态</div>
-                <div>饥饿：{pet.hunger}</div>
-                <div>快乐：{pet.happiness}</div>
-                <div>健康：{pet.health}</div>
-                <div>亲密：{pet.intimacy}</div>
+              <div
+                style={{
+                  padding: 12,
+                  borderTop: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                <div
+                  style={{ fontWeight: 700, marginBottom: 8, color: "#FFD700" }}
+                >
+                  💫 状态
+                </div>
+                <div style={{ marginBottom: 4 }}>
+                  灵食（饱食）：{pet.hunger}
+                </div>
+                <div style={{ marginBottom: 4 }}>
+                  道心（心情）：{pet.happiness}
+                </div>
+                <div style={{ marginBottom: 4 }}>
+                  体魄（健康）：{pet.health}
+                </div>
+                <div style={{ marginBottom: 4 }}>
+                  羁绊（亲密）：{pet.intimacy}
+                </div>
               </div>
             </div>
           </div>
