@@ -90,6 +90,12 @@ export function PetScene({
       </div>
 
       <div className="main-content">
+        <div className="light-beams-container">
+          <div className="light-beam beam-1" />
+          <div className="light-beam beam-2" />
+          <div className="light-beam beam-3" />
+          <div className="light-beam beam-4" />
+        </div>
         <div className="pet-display-area">
           <div className="pet-glow" />
           <div className="pet-container">
